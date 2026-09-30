@@ -1,0 +1,2300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#151c33" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="StudyWise" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" type="image/png" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<script>
+/* PWA plumbing — runs before React so we never miss Chrome's install event */
+window.__swInstallEvent = null;
+window.addEventListener("beforeinstallprompt", function(e){
+  e.preventDefault();
+  window.__swInstallEvent = e;
+  window.dispatchEvent(new Event("sw-install-ready"));
+});
+window.addEventListener("appinstalled", function(){
+  window.__swInstallEvent = null;
+  window.dispatchEvent(new Event("sw-installed"));
+});
+// Ask Chrome not to evict our saved data when storage is low (auto-granted for installed apps)
+try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}
+// Offline support
+if("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
+  window.addEventListener("load", function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); });
+}
+</script>
+<title>StudyWise — CBSE Class 12 Arts Smart Study Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#151c33;
+  --ink-soft:#3c4566;
+  --paper:#f2f4f3;
+  --panel:#ffffff;
+  --line:#dfe3e6;
+  --navy:#151c33;
+  --navy-2:#232c4d;
+  --marigold:#e8a13d;
+  --marigold-deep:#c9821f;
+  --teal:#1f7a6c;
+  --teal-soft:#e4f2ee;
+  --coral:#d5573b;
+  --coral-soft:#fbe7e2;
+  --green:#2f8f5b;
+  --green-soft:#e5f4ea;
+  --gray:#8890a3;
+  --radius-s:10px;
+  --radius-m:16px;
+  --radius-l:26px;
+  --shadow:0 1px 2px rgba(21,28,51,0.06), 0 8px 24px -12px rgba(21,28,51,0.18);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:'Manrope',sans-serif;
+  background:var(--paper);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.serif{font-family:'Fraunces',serif;}
+#root{min-height:100vh;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+a{color:inherit;}
+::selection{background:var(--marigold);color:var(--navy);}
+
+/* ---------- utility ---------- */
+.container{max-width:1180px;margin:0 auto;padding:0 28px;}
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  border:none;border-radius:999px;padding:13px 26px;
+  font-weight:700;font-size:15px;letter-spacing:0.01em;
+  transition:transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease, color .18s ease;
+}
+.btn:active{transform:scale(0.97);}
+.btn-primary{background:var(--marigold);color:var(--navy);box-shadow:0 10px 24px -10px rgba(232,161,61,0.65);}
+.btn-primary:hover{background:var(--marigold-deep);box-shadow:0 14px 28px -10px rgba(232,161,61,0.75);}
+.btn-dark{background:var(--navy);color:#fff;}
+.btn-dark:hover{background:var(--navy-2);}
+.btn-ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line);}
+.btn-ghost:hover{border-color:var(--ink);}
+.btn-sm{padding:8px 16px;font-size:13px;}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;font-size:12px;font-weight:700;}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-m);transition:border-color .2s ease, box-shadow .2s ease;}
+.muted{color:var(--ink-soft);}
+.faint{color:var(--gray);}
+.progress-track{background:#e9ebe9;border-radius:999px;overflow:hidden;height:9px;}
+.progress-fill{height:100%;border-radius:999px;transition:width .55s cubic-bezier(.22,.9,.32,1);}
+.scrollbar-thin::-webkit-scrollbar{width:6px;height:6px;}
+.scrollbar-thin::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px;}
+
+/* ---------- animation system ---------- */
+@keyframes fadeInUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.anim-in{animation:fadeInUp .32s cubic-bezier(.22,.9,.32,1) both;}
+@keyframes popCheck{0%{transform:scale(.82);}55%{transform:scale(1.16);}100%{transform:scale(1);}}
+.pop{animation:popCheck .3s ease;}
+@keyframes rowFlash{0%{background:var(--green-soft);}100%{background:transparent;}}
+.row-flash{animation:rowFlash 1s ease;}
+@keyframes toastIn{from{opacity:0;transform:translateY(12px) scale(.97);}to{opacity:1;transform:translateY(0) scale(1);}}
+.toast-in{animation:toastIn .28s cubic-bezier(.22,.9,.32,1) both;}
+@keyframes ringPulse{0%{box-shadow:0 0 0 0 rgba(232,161,61,.45);}100%{box-shadow:0 0 0 13px rgba(232,161,61,0);}}
+.timer-live{animation:ringPulse 1.8s ease-out infinite;}
+@keyframes focusGlow{0%{box-shadow:0 0 0 0 rgba(213,87,59,.35);}70%{box-shadow:0 0 0 9px rgba(213,87,59,0);}100%{box-shadow:0 0 0 0 rgba(213,87,59,0);}}
+.focus-glow{animation:focusGlow .7s ease;}
+input[type=checkbox]{transition:transform .18s ease;}
+
+/* ---------- touch basics ---------- */
+html{-webkit-text-size-adjust:100%;}
+button,.btn,label.btn{touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
+
+/* ---------- phone layout (<= 820px): sidebar becomes a compact top bar ---------- */
+@media (max-width: 820px){
+  html,body{overflow-x:hidden;}
+  .sw-shell{flex-direction:column !important;}
+  .sw-side{width:100% !important;height:auto !important;position:sticky !important;top:0;z-index:40;flex-direction:row !important;flex-wrap:wrap;align-items:center;padding:10px 12px 6px !important;gap:8px !important;}
+  .sw-brand{flex:1 1 auto;}
+  .sw-search{order:2;padding:8px 12px !important;}
+  .sw-cd{order:3;margin-top:0 !important;padding:6px 10px !important;}
+  .sw-cd-n{font-size:15px !important;}
+  .sw-nav{order:4;flex:0 0 100%;flex-direction:row !important;overflow-x:auto;gap:4px !important;padding-bottom:6px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .sw-nav::-webkit-scrollbar{display:none;}
+  .sw-nav button{flex:0 0 auto;white-space:nowrap;padding:8px 12px !important;font-size:13px !important;}
+  .sw-focus,.sw-hide-m{display:none !important;}
+  .sw-main{width:100%;}
+  .container{padding:0 14px;}
+  .sw-pagehead{padding:22px 14px 14px !important;gap:12px !important;}
+  .sw-h1{font-size:24px !important;}
+  img,canvas,svg{max-width:100%;}
+
+  /* iOS zooms into any field under 16px; inline sizes need !important to lose */
+  input,select,textarea{font-size:16px !important;}
+  .btn-sm{padding:9px 14px;min-height:38px;}
+  .sw-check{width:22px !important;height:22px !important;flex:0 0 auto;}
+  .sw-rate{width:32px !important;height:32px !important;font-size:13px !important;}
+  .sw-custom{width:130px !important;}
+
+  /* layout helpers */
+  .sw-two{grid-template-columns:1fr !important;gap:16px !important;}
+  .sw-notes-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr)) !important;}
+  .sw-fform > select,.sw-fform > input[type=date]{flex:1 1 100%;min-width:0;}
+  .sw-clock{font-size:46px !important;}
+  .sw-toast{left:14px !important;right:14px !important;bottom:14px !important;max-width:none !important;text-align:center;}
+
+  /* subject topic rows: text on top, buttons on their own line */
+  .sw-trow{flex-wrap:wrap !important;}
+  .sw-trow > div{flex:1 1 calc(100% - 36px) !important;}
+  .sw-trow > button:first-of-type{margin-left:32px;}
+
+  /* tables turn into stacked cards instead of sideways scrolling */
+  .sw-table{display:block !important;overflow:visible !important;}
+  .sw-table thead{display:none !important;}
+  .sw-table tbody{display:block;}
+  .sw-table tr{display:flex !important;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:12px 14px !important;}
+  .sw-table td{display:block;padding:0 !important;text-align:left !important;font-size:13px;}
+  .sw-table td.sw-full{flex:0 0 100%;}
+  .sw-table td.sw-end{margin-left:auto;}
+  .sw-table td.sw-o9{order:9;}
+  .sw-lbl td[data-label]::before{content:attr(data-label) ": ";color:var(--gray);font-size:11.5px;font-weight:600;}
+  .sw-lbl td.sw-end{margin-left:0;}
+
+  /* landing page */
+  .sw-float{display:none !important;}
+  .sw-lnav{padding:18px 16px !important;}
+  .sw-hero{padding:8px 16px 40px !important;gap:32px !important;min-height:0 !important;}
+  .sw-lpill{border-radius:14px !important;line-height:1.45;}
+  .sw-lbtns .btn{flex:1 1 100%;justify-content:center;}
+  .sw-stats{gap:22px !important;}
+  .sw-foot{gap:6px 16px !important;padding:0 16px;}
+  .sw-foot .sw-dot{display:none;}
+
+  /* setup */
+  .sw-setup{padding:14px !important;align-items:flex-start !important;}
+  .sw-setup-card{padding:24px 18px !important;}
+}
+@media (max-width: 520px){
+  .sw-notes-grid{grid-template-columns:1fr !important;}
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important;}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+
+<script type="text/babel" data-presets="react">
+const {useState,useEffect,useMemo,useRef,useCallback,createContext,useContext} = React;
+
+/* =========================================================================
+   1. CBSE SYLLABUS DATA  (Class 12, Arts stream — 2025-26 academic session)
+   Structured per the official CBSE curriculum. Kept as one data module so it
+   can later be split into subjects/*.json files without touching UI code.
+   ========================================================================= */
+const CBSE_SESSION = "2025-26";
+
+// difficulty: 1 easy · 2 medium · 3 hard   |   importance: 1 low ... 4 very high
+const SUBJECTS_SEED = [
+  {
+    id: "polsci", name: "Political Science", short: "Pol. Sci.", color: "#1f7a6c",
+    books: [
+      { name: "Contemporary World Politics", chapters: [
+        { name: "The End of Bipolarity", topics: [
+          {name:"Cold War era & alliance systems", difficulty:2, importance:3, est:40},
+          {name:"Disintegration of the Soviet Union", difficulty:2, importance:3, est:35},
+          {name:"India's response to a changing world", difficulty:2, importance:2, est:25},
+        ]},
+        { name: "Contemporary Centres of Power", topics: [
+          {name:"European Union — formation & structure", difficulty:2, importance:3, est:35},
+          {name:"ASEAN — origin & significance", difficulty:1, importance:2, est:25},
+          {name:"Rise of China as an economic power", difficulty:2, importance:3, est:30},
+        ]},
+        { name: "Contemporary South Asia", topics: [
+          {name:"Peace & conflict in South Asia", difficulty:2, importance:3, est:35},
+          {name:"Democracy in Pakistan, Nepal, Bangladesh", difficulty:3, importance:4, est:45},
+          {name:"India's relations with neighbours", difficulty:2, importance:4, est:40},
+        ]},
+        { name: "International Organisations", topics: [
+          {name:"UN structure — organs & functions", difficulty:2, importance:4, est:40},
+          {name:"UN reform debates", difficulty:3, importance:3, est:30},
+        ]},
+        { name: "Security in Contemporary World", topics: [
+          {name:"Traditional vs non-traditional security", difficulty:3, importance:3, est:35},
+          {name:"Terrorism & human security", difficulty:2, importance:3, est:30},
+        ]},
+        { name: "Environment and Natural Resources", topics: [
+          {name:"Global environmental negotiations", difficulty:2, importance:3, est:30},
+          {name:"India's stand on climate change", difficulty:2, importance:3, est:25},
+        ]},
+        { name: "Globalisation", topics: [
+          {name:"Economic, cultural & political globalisation", difficulty:2, importance:3, est:35},
+          {name:"Anti-globalisation movements", difficulty:2, importance:2, est:20},
+        ]},
+      ]},
+      { name: "Politics in India Since Independence", chapters: [
+        { name: "Challenges of Nation Building", topics: [
+          {name:"Partition & refugee rehabilitation", difficulty:2, importance:3, est:30},
+          {name:"Integration of princely states", difficulty:2, importance:3, est:30},
+          {name:"States reorganisation on linguistic lines", difficulty:2, importance:3, est:25},
+        ]},
+        { name: "Era of One-Party Dominance", topics: [
+          {name:"First general elections, 1952", difficulty:1, importance:2, est:20},
+          {name:"Nature of Congress dominance", difficulty:2, importance:3, est:30},
+        ]},
+        { name: "Politics of Planned Development", topics: [
+          {name:"Bombay Plan & Nehruvian model", difficulty:3, importance:3, est:35},
+          {name:"Green Revolution & its politics", difficulty:2, importance:3, est:30},
+        ]},
+        { name: "India's External Relations", topics: [
+          {name:"Non-Alignment Movement", difficulty:2, importance:4, est:35},
+          {name:"India-China war 1962 & India-Pakistan wars", difficulty:2, importance:4, est:35},
+        ]},
+        { name: "Challenges to and Restoration of the Congress System", topics: [
+          {name:"Political succession after Nehru", difficulty:2, importance:2, est:25},
+          {name:"1967 election & rise of non-Congressism", difficulty:2, importance:3, est:30},
+        ]},
+        { name: "Crisis of Democratic Order", topics: [
+          {name:"The Emergency, 1975-77 — causes & aftermath", difficulty:3, importance:4, est:45},
+          {name:"Restoration of democracy, Janata experiment", difficulty:2, importance:3, est:30},
+        ]},
+        { name: "Regional Aspirations", topics: [
+          {name:"Punjab crisis & Kashmir issue", difficulty:3, importance:3, est:35},
+          {name:"Regional political parties & federalism", difficulty:2, importance:3, est:30},
+        ]},
+        { name: "Recent Developments in Indian Politics", topics: [
+          {name:"Rise of coalition politics", difficulty:2, importance:3, est:30},
+          {name:"Mandal issue & new social movements", difficulty:3, importance:4, est:40},
+          {name:"Economic reforms & Indian politics post-1991", difficulty:2, importance:3, est:30},
+        ]},
+      ]},
+    ]
+  },
+  {
+    id: "history", name: "History", short: "History", color: "#c9821f",
+    books: [
+      { name: "Themes in Indian History (Part I–III)", chapters: [
+        { name: "Bricks, Beads and Bones — the Harappan Civilisation", topics: [
+          {name:"Town planning & craft production", difficulty:2, importance:3, est:35},
+          {name:"Decline & archaeological debates", difficulty:2, importance:2, est:25},
+        ]},
+        { name: "Kings, Farmers and Towns — Early States", topics: [
+          {name:"Mauryan administration & Ashokan edicts", difficulty:2, importance:4, est:40},
+          {name:"Sixteen Mahajanapadas", difficulty:1, importance:2, est:20},
+        ]},
+        { name: "Kinship, Caste and Class — the Mahabharata", topics: [
+          {name:"Social categories & varna order", difficulty:3, importance:3, est:35},
+          {name:"Composition of the epic — textual layers", difficulty:2, importance:2, est:25},
+        ]},
+        { name: "Thinkers, Beliefs and Buildings — Buddhism", topics: [
+          {name:"Buddhist philosophy & the Sangha", difficulty:2, importance:3, est:30},
+          {name:"Sanchi stupa — art & architecture", difficulty:2, importance:2, est:25},
+        ]},
+        { name: "Through the Eyes of Travellers", topics: [
+          {name:"Al-Biruni's account of India", difficulty:2, importance:2, est:25},
+          {name:"Ibn Battuta & Bernier's observations", difficulty:2, importance:2, est:25},
+        ]},
+        { name: "Bhakti–Sufi Traditions", topics: [
+          {name:"Bhakti movement — Alvars, Nayanars, Virashaivas", difficulty:2, importance:3, est:30},
+          {name:"Sufi silsilas & Kabir's teachings", difficulty:2, importance:3, est:30},
+        ]},
+        { name: "An Imperial Capital — Vijayanagara", topics: [
+          {name:"City layout & water management", difficulty:2, importance:2, est:25},
+        ]},
+        { name: "Peasants, Zamindars and the State — Mughal Agrarian Relations", topics: [
+          {name:"Ain-i-Akbari as a source", difficulty:2, importance:3, est:30},
+          {name:"Village community & zamindars", difficulty:2, importance:3, est:30},
+        ]},
+        { name: "Kings and Chronicles — the Mughal Court", topics: [
+          {name:"Akbarnama & mansabdari system", difficulty:2, importance:3, est:30},
+        ]},
+        { name: "Colonialism and the Countryside", topics: [
+          {name:"Permanent Settlement & Mahalwari system", difficulty:3, importance:4, est:40},
+          {name:"Deccan riots & rural indebtedness", difficulty:2, importance:3, est:30},
+        ]},
+        { name: "Rebels and the Raj — 1857 Revolt", topics: [
+          {name:"Causes, course & suppression of 1857", difficulty:2, importance:4, est:40},
+          {name:"Contemporary imagery & memory of 1857", difficulty:2, importance:2, est:20},
+        ]},
+        { name: "Colonial Cities — Urbanisation, Planning, Architecture", topics: [
+          {name:"Bombay, Madras, Calcutta compared", difficulty:2, importance:3, est:30},
+        ]},
+        { name: "Mahatma Gandhi and the Nationalist Movement", topics: [
+          {name:"Non-Cooperation & Civil Disobedience", difficulty:3, importance:4, est:45},
+          {name:"Quit India Movement", difficulty:2, importance:4, est:35},
+        ]},
+        { name: "Understanding Partition", topics: [
+          {name:"Political developments 1940s", difficulty:3, importance:4, est:40},
+          {name:"Oral history as a source for Partition", difficulty:2, importance:2, est:25},
+        ]},
+        { name: "Framing the Constitution", topics: [
+          {name:"Constituent Assembly debates", difficulty:3, importance:4, est:40},
+          {name:"Key constitutional principles adopted", difficulty:2, importance:3, est:30},
+        ]},
+      ]},
+    ]
+  },
+  {
+    id: "sociology", name: "Sociology", short: "Sociology", color: "#5b4b8a",
+    books: [
+      { name: "Indian Society", chapters: [
+        { name: "Introducing Indian Society", topics: [
+          {name:"Sociology & the study of Indian society", difficulty:1, importance:2, est:25},
+          {name:"Colonialism & Indian society", difficulty:2, importance:2, est:25},
+        ]},
+        { name: "The Demographic Structure of Indian Society", topics: [
+          {name:"Census concepts — sex ratio, growth rate", difficulty:2, importance:3, est:30},
+          {name:"Demographic transition & policy", difficulty:2, importance:2, est:25},
+        ]},
+        { name: "Social Institutions: Continuity and Change", topics: [
+          {name:"Caste system — change over time", difficulty:2, importance:3, est:30},
+          {name:"Family & kinship in transition", difficulty:2, importance:3, est:30},
+        ]},
+        { name: "The Market as a Social Institution", topics: [
+          {name:"Embeddedness of markets in society", difficulty:3, importance:2, est:30},
+          {name:"Jajmani system & weekly haats/melas", difficulty:2, importance:2, est:20},
+        ]},
+        { name: "Patterns of Social Inequality and Exclusion", topics: [
+          {name:"Caste, tribe & class-based inequality", difficulty:2, importance:4, est:35},
+          {name:"Disability as social exclusion", difficulty:2, importance:2, est:20},
+        ]},
+        { name: "The Challenges of Cultural Diversity", topics: [
+          {name:"Communalism, regionalism & secularism", difficulty:3, importance:4, est:35},
+        ]},
+        { name: "Structural Change", topics: [
+          {name:"Colonialism, industrialisation & urbanisation", difficulty:2, importance:3, est:30},
+        ]},
+      ]},
+      { name: "Social Change and Development in India", chapters: [
+        { name: "Cultural Change", topics: [
+          {name:"Sanskritisation, modernisation & westernisation", difficulty:2, importance:3, est:30},
+        ]},
+        { name: "Change and Development in Rural Society", topics: [
+          {name:"Green Revolution's social impact", difficulty:2, importance:3, est:30},
+          {name:"Land reforms after Independence", difficulty:2, importance:3, est:25},
+        ]},
+        { name: "Change and Development in Industrial Society", topics: [
+          {name:"Formal & informal sector work", difficulty:2, importance:3, est:30},
+          {name:"Liberalisation & Indian industry", difficulty:2, importance:2, est:25},
+        ]},
+        { name: "Globalisation and Social Change", topics: [
+          {name:"Economic vs cultural globalisation debates", difficulty:2, importance:3, est:30},
+        ]},
+        { name: "Mass Media and Communications", topics: [
+          {name:"Media, democracy & public opinion", difficulty:1, importance:2, est:25},
+        ]},
+        { name: "Social Movements", topics: [
+          {name:"Peasant & workers' movements", difficulty:2, importance:3, est:30},
+          {name:"Women's & environmental movements", difficulty:2, importance:3, est:30},
+        ]},
+      ]},
+    ]
+  },
+  {
+    id: "economics", name: "Economics", short: "Economics", color: "#d5573b",
+    books: [
+      { name: "Introductory Macroeconomics", chapters: [
+        { name: "National Income Accounting", topics: [
+          {name:"Circular flow of income", difficulty:2, importance:4, est:35},
+          {name:"GDP, GNP, NNP — concepts & numericals", difficulty:3, importance:4, est:50},
+          {name:"Methods of calculating national income", difficulty:3, importance:4, est:45},
+        ]},
+        { name: "Money and Banking", topics: [
+          {name:"Functions of money & the RBI", difficulty:2, importance:3, est:35},
+          {name:"Credit creation by commercial banks", difficulty:3, importance:3, est:35},
+        ]},
+        { name: "Determination of Income and Employment", topics: [
+          {name:"Aggregate demand & aggregate supply", difficulty:3, importance:4, est:45},
+          {name:"Investment multiplier & numericals", difficulty:3, importance:4, est:45},
+          {name:"Excess demand & deficient demand", difficulty:3, importance:3, est:35},
+        ]},
+        { name: "Government Budget and the Economy", topics: [
+          {name:"Revenue vs capital budget, deficits", difficulty:2, importance:4, est:40},
+        ]},
+        { name: "Balance of Payments", topics: [
+          {name:"BoP components & foreign exchange rate", difficulty:2, importance:3, est:35},
+        ]},
+      ]},
+      { name: "Indian Economic Development", chapters: [
+        { name: "Indian Economy on the Eve of Independence", topics: [
+          {name:"Agriculture, industry & foreign trade under colonial rule", difficulty:2, importance:3, est:30},
+        ]},
+        { name: "Indian Economy 1950–1990", topics: [
+          {name:"Five Year Plans & the licence-permit system", difficulty:2, importance:3, est:35},
+          {name:"Green Revolution & land reforms", difficulty:2, importance:3, est:30},
+        ]},
+        { name: "Liberalisation, Privatisation, Globalisation", topics: [
+          {name:"1991 economic reforms — causes & measures", difficulty:2, importance:4, est:40},
+          {name:"Impact of LPG on the Indian economy", difficulty:2, importance:4, est:35},
+        ]},
+        { name: "Poverty", topics: [
+          {name:"Measuring poverty & poverty alleviation programmes", difficulty:2, importance:4, est:35},
+        ]},
+        { name: "Human Capital Formation in India", topics: [
+          {name:"Sources & state of human capital in India", difficulty:2, importance:3, est:30},
+        ]},
+        { name: "Rural Development", topics: [
+          {name:"Credit, marketing & diversification in agriculture", difficulty:2, importance:3, est:30},
+          {name:"Organic farming", difficulty:1, importance:2, est:15},
+        ]},
+        { name: "Employment: Growth, Informalisation & Related Issues", topics: [
+          {name:"Formal vs informal employment trends", difficulty:2, importance:3, est:30},
+        ]},
+        { name: "Infrastructure", topics: [
+          {name:"Energy & health infrastructure in India", difficulty:2, importance:2, est:25},
+        ]},
+        { name: "Environment and Sustainable Development", topics: [
+          {name:"Sustainable development & state of India's environment", difficulty:2, importance:3, est:30},
+        ]},
+        { name: "Comparative Development Experience of India & its Neighbours", topics: [
+          {name:"India, Pakistan & China — a comparison", difficulty:2, importance:3, est:30},
+        ]},
+      ]},
+    ]
+  },
+  {
+    id: "english", name: "English Core", short: "English", color: "#2f6fb0",
+    books: [
+      { name: "Flamingo — Prose", chapters: [
+        { name: "The Last Lesson", topics: [{name:"Theme, characters & message", difficulty:1, importance:3, est:25}] },
+        { name: "Lost Spring", topics: [{name:"Child labour & lost childhoods", difficulty:2, importance:3, est:30}] },
+        { name: "Deep Water", topics: [{name:"Fear, courage & self-reliance", difficulty:1, importance:2, est:20}] },
+        { name: "The Rattrap", topics: [{name:"Redemption & human kindness", difficulty:2, importance:3, est:25}] },
+        { name: "Indigo", topics: [{name:"Gandhi & the Champaran episode", difficulty:2, importance:3, est:25}] },
+        { name: "Poets and Pancakes", topics: [{name:"Satire on film-studio life", difficulty:2, importance:2, est:20}] },
+        { name: "The Interview", topics: [{name:"Two views on interviews as a form", difficulty:1, importance:2, est:20}] },
+        { name: "Going Places", topics: [{name:"Fantasy vs reality in adolescence", difficulty:2, importance:3, est:25}] },
+      ]},
+      { name: "Flamingo — Poetry", chapters: [
+        { name: "My Mother at Sixty-six", topics: [{name:"Imagery & theme of ageing", difficulty:2, importance:3, est:20}] },
+        { name: "Keeping Quiet", topics: [{name:"Introspection & stillness", difficulty:2, importance:2, est:20}] },
+        { name: "A Thing of Beauty", topics: [{name:"Keats — beauty & joy", difficulty:2, importance:3, est:20}] },
+        { name: "A Roadside Stand", topics: [{name:"Rural poverty vs urban indifference", difficulty:2, importance:2, est:20}] },
+        { name: "Aunt Jennifer's Tigers", topics: [{name:"Symbolism of oppression & freedom", difficulty:2, importance:3, est:20}] },
+      ]},
+      { name: "Vistas — Supplementary Reader", chapters: [
+        { name: "The Third Level", topics: [{name:"Escapism & fantasy", difficulty:2, importance:2, est:20}] },
+        { name: "The Tiger King", topics: [{name:"Satire on power & pride", difficulty:2, importance:3, est:25}] },
+        { name: "Journey to the End of the Earth", topics: [{name:"Antarctica & climate change", difficulty:2, importance:3, est:25}] },
+        { name: "The Enemy", topics: [{name:"War, humanity & moral conflict", difficulty:2, importance:3, est:25}] },
+        { name: "Should Wizard Hit Mommy", topics: [{name:"Parenting & storytelling", difficulty:2, importance:2, est:20}] },
+        { name: "On the Face of It", topics: [{name:"Disability & acceptance — a play", difficulty:2, importance:3, est:20}] },
+        { name: "Evans Tries an O-level", topics: [{name:"Wit & deception — a play", difficulty:2, importance:2, est:20}] },
+        { name: "Memories of Childhood", topics: [{name:"Two women's accounts of marginalisation", difficulty:2, importance:3, est:20}] },
+      ]},
+      { name: "Writing Skills", chapters: [
+        { name: "Note-Making & Summarising", topics: [{name:"Format & abbreviation practice", difficulty:2, importance:3, est:30}] },
+        { name: "Notice, Advertisement & Poster", topics: [{name:"Format-based short writing", difficulty:1, importance:3, est:25}] },
+        { name: "Letter Writing — Formal/Informal", topics: [{name:"Business & official letters", difficulty:1, importance:3, est:25}] },
+        { name: "Essay / Article Writing", topics: [{name:"Structure, coherence & register", difficulty:2, importance:4, est:35}] },
+      ]},
+    ]
+  },
+];
+
+// Flatten to a working topic list with ids + mutable state fields.
+function buildInitialSubjects(){
+  return SUBJECTS_SEED.map(subj=>{
+    let tCounter=0;
+    const chapters=[];
+    subj.books.forEach(book=>{
+      book.chapters.forEach(ch=>{
+        const topics = ch.topics.map(t=>{
+          tCounter++;
+          return {
+            id: `${subj.id}-${chapters.length}-${tCounter}`,
+            name: t.name,
+            book: book.name,
+            chapter: ch.name,
+            difficulty: t.difficulty,
+            importance: t.importance,
+            estimatedMinutes: t.est,
+            completed:false,
+            revisionStage:0, // 0..3 (3 = fully revised)
+            lastStudied:null,
+            lastRevised:null,
+            note:"",
+            photo:null,
+          };
+        });
+        chapters.push({ name: ch.name, book: book.name, topics });
+      });
+    });
+    return {
+      id: subj.id, name: subj.name, short: subj.short, color: subj.color,
+      interest:3, confidence:3, selfDifficulty:"Medium",
+      chapters,
+    };
+  });
+}
+
+// A separate, clearly-labelled seed used ONLY for the "Demo Student" profile
+// so a brand-new real user never sees fake completion or fake hours (req. #5).
+function buildDemoSubjects(){
+  const subs = buildInitialSubjects();
+  const completionTargets = {polsci:0.62, history:0.5, sociology:0.7, economics:0.42, english:0.58};
+  subs.forEach(s=>{
+    const flat = s.chapters.flatMap(c=>c.topics);
+    const target = Math.round(flat.length*(completionTargets[s.id]||0.5));
+    flat.forEach((t,i)=>{
+      if(i<target){
+        t.completed=true;
+        t.lastStudied = new Date(Date.now()-(2+ (i%10))*86400000).toISOString();
+        t.revisionStage = i%4===0 ? 2 : i%3===0 ? 1 : 0;
+        if(t.revisionStage>0) t.lastRevised = new Date(Date.now()-(1+(i%6))*86400000).toISOString();
+      }
+    });
+  });
+  return subs;
+}
+function seedDemoSessions(){
+  const now = Date.now(); const day = 86400000;
+  const raw = [
+    {sid:"economics", tname:"National Income Accounting › GDP, GNP, NNP — concepts & numericals", mins:42, daysAgo:0},
+    {sid:"history", tname:"Bhakti-Sufi Traditions › Bhakti movement — Alvars, Nayanars, Virashaivas", mins:35, daysAgo:0},
+    {sid:"polsci", tname:"Globalisation › Economic, cultural & political globalisation", mins:50, daysAgo:1},
+    {sid:"sociology", tname:"Patterns of Social Inequality and Exclusion › Caste, tribe & class-based inequality", mins:38, daysAgo:1},
+    {sid:"english", tname:"The Last Lesson › Theme, characters & message", mins:28, daysAgo:2},
+    {sid:"economics", tname:"Liberalisation, Privatisation, Globalisation › 1991 economic reforms — causes & measures", mins:40, daysAgo:3},
+  ];
+  return raw.map((r,i)=>({ id:"s"+i, subjectId:r.sid, topicName:r.tname, minutes:r.mins, date:new Date(now-r.daysAgo*day).toISOString() }));
+}
+
+function allTopics(subjects){
+  return subjects.flatMap(s=>s.chapters.flatMap(c=>c.topics.map(t=>({...t, subjectId:s.id, subjectName:s.name, subjectColor:s.color}))));
+}
+
+/* =========================================================================
+   2. SMART PRIORITY ENGINE
+   ========================================================================= */
+const REVISION_INTERVALS_DEFAULT = [3,7,15]; // days: rev1, rev2, final-revision trigger window
+
+function daysSince(dateStr){
+  if(!dateStr) return 999;
+  return Math.floor((Date.now() - new Date(dateStr).getTime())/86400000);
+}
+
+function isRevisionDue(topic, intervals){
+  if(!topic.completed) return false;
+  if(topic.revisionStage>=3) return false;
+  const lastAction = topic.lastRevised || topic.lastStudied;
+  const gap = intervals[topic.revisionStage] ?? intervals[intervals.length-1];
+  return daysSince(lastAction) >= gap;
+}
+
+// Core per-topic scoring. examFocus lets Exam Focus Mode boost one subject.
+function calculatePriority(topic, subject, daysToExam, intervals, examFocus){
+  const diffScore = topic.difficulty/3;
+  const impScore = topic.importance/4;
+  const weakness = (5 - subject.confidence)/4;
+  const pending = topic.completed ? 0 : 1;
+  const due = isRevisionDue(topic, intervals) ? 1 : (topic.completed ? 0.25 : 0.6);
+  const staleness = Math.min(daysSince(topic.lastStudied||null)/30, 1);
+  const examPressure = daysToExam!=null ? Math.max(0, Math.min(1,(180-daysToExam)/180)) : 0.3;
+
+  let score = diffScore*22 + impScore*20 + weakness*16 + pending*18 + due*14 + staleness*6 + examPressure*4;
+
+  const reasons=[];
+  if(topic.difficulty===3) reasons.push("high difficulty");
+  if(topic.importance>=3) reasons.push("high exam importance");
+  if(!topic.completed) reasons.push("incomplete");
+  if(isRevisionDue(topic,intervals)) reasons.push("revision overdue");
+  if(weakness>0.5) reasons.push("your confidence here is low");
+  if(daysSince(topic.lastStudied)>14 && topic.lastStudied) reasons.push("not studied recently");
+
+  if(examFocus && examFocus.enabled && examFocus.subjectId===subject.id){
+    score += examFocus.focusOnly ? 30 : 20;
+    reasons.unshift("Exam Focus is active for " + subject.name);
+  }
+  score = Math.round(Math.min(99, Math.max(4, score)));
+  if(reasons.length===0) reasons.push("keeps your syllabus balanced");
+
+  const reason = "Recommended because " + reasons.slice(0,3).join(", ") + ".";
+  const recommendedMinutes = Math.round(Math.min(90, Math.max(20, topic.estimatedMinutes * (0.6 + score/140))));
+
+  return { score, reason, recommendedMinutes };
+}
+
+// Picks the single best actionable topic for one subject (used in comparisons).
+function bestTopicForSubject(subject, daysToExam, intervals, examFocus){
+  const candidates = subject.chapters.flatMap(c=>c.topics).filter(t=>!t.completed || isRevisionDue(t,intervals));
+  const pool = candidates.length ? candidates : subject.chapters.flatMap(c=>c.topics);
+  let best=null, bestScore=-1;
+  pool.forEach(t=>{ const {score}=calculatePriority(t,subject,daysToExam,intervals,examFocus); if(score>bestScore){bestScore=score;best=t;} });
+  if(!best) return null;
+  return { topic:best, ...calculatePriority(best,subject,daysToExam,intervals,examFocus) };
+}
+
+// Fills `remainingMinutes` of study time with the best remaining topics,
+// respecting anything already excluded (manually chosen or dismissed) and
+// respecting Exam Focus Mode (restricts the whole pool when "focus only").
+function computeAutoFill(allSubjects, excludeIds, remainingMinutes, daysToExam, intervals, examFocus){
+  if(remainingMinutes<=0) return [];
+  const candidateSubjects = (examFocus && examFocus.enabled && examFocus.focusOnly)
+    ? allSubjects.filter(s=>s.id===examFocus.subjectId)
+    : allSubjects;
+
+  let pool=[];
+  candidateSubjects.forEach(s=>{
+    s.chapters.forEach(c=>{
+      c.topics.forEach(t=>{
+        if(excludeIds.has(t.id)) return;
+        if(t.completed && !isRevisionDue(t,intervals)) return;
+        const {score,reason,recommendedMinutes} = calculatePriority(t,s,daysToExam,intervals,examFocus);
+        pool.push({topic:t, subject:s, score, reason, recommendedMinutes});
+      });
+    });
+  });
+  pool.sort((a,b)=>b.score-a.score);
+
+  const picks=[]; let used=0; const seenSubjects=new Set();
+  for(const p of pool){
+    if(used>=remainingMinutes) break;
+    if(seenSubjects.has(p.subject.id)) continue;
+    const minutes = Math.min(p.recommendedMinutes, remainingMinutes-used);
+    if(minutes<10) continue;
+    picks.push({...p, minutes, source:"auto"});
+    used+=minutes; seenSubjects.add(p.subject.id);
+  }
+  for(const p of pool){
+    if(used>=remainingMinutes) break;
+    if(picks.find(pp=>pp.topic.id===p.topic.id)) continue;
+    const minutes = Math.min(p.recommendedMinutes, remainingMinutes-used);
+    if(minutes<10) continue;
+    picks.push({...p, minutes, source:"auto"});
+    used+=minutes;
+  }
+  return picks.sort((a,b)=>b.score-a.score);
+}
+
+function fmtHM(mins){
+  const h=Math.floor(mins/60), m=Math.round(mins%60);
+  if(h<=0) return `${m}m`;
+  return `${h}h ${m}m`;
+}
+function fmtClock(totalSeconds){
+  const h=String(Math.floor(totalSeconds/3600)).padStart(2,'0');
+  const m=String(Math.floor((totalSeconds%3600)/60)).padStart(2,'0');
+  const s=String(Math.floor(totalSeconds%60)).padStart(2,'0');
+  return `${h}:${m}:${s}`;
+}
+function diffMeta(d){
+  return d===1?{label:"Easy",emoji:"🟢",color:"var(--green)"}
+       : d===2?{label:"Medium",emoji:"🟡",color:"var(--marigold-deep)"}
+       : {label:"Hard",emoji:"🔴",color:"var(--coral)"};
+}
+function impMeta(i){
+  return ["","Low","Medium","High","Very High"][i] || "Medium";
+}
+
+/* =========================================================================
+   3. APP CONTEXT / MULTI-PROFILE STATE
+   Each student is kept in an isolated "bucket" inside profilesStore, keyed
+   by their name. A brand-new name always starts at buildInitialSubjects()
+   (0% everywhere, 0 minutes, 0 sessions) — see req. #5/#6. The "Demo
+   Student" bucket is the only one seeded with sample data, purely so the
+   landing page's "See a live demo" link has something to show.
+
+   PERSISTENCE: profilesStore + currentKey are saved to localStorage under
+   STORAGE_KEY (see 3a below) and restored on start. The same envelope is
+   used for the Export / Import Backup file, so one code path validates both.
+   ========================================================================= */
+/* ---- 3a. PERSISTENCE + BACKUP HELPERS (pure functions, no React) ---- */
+const STORAGE_KEY = "studywise_backup_v1";
+const LAST_EXPORT_KEY = "studywise_last_export";
+const BACKUP_APP = "StudyWise";
+const BACKUP_VERSION = 1;
+// To support a future format: bump BACKUP_VERSION and add a migration that
+// upgrades version N -> N+1, e.g. BACKUP_MIGRATIONS[1] = d => ({...d, version:2, ...}).
+// Older backups are then upgraded step by step on import/load.
+const BACKUP_MIGRATIONS = {};
+
+const isPlainObj = v => v !== null && typeof v === "object" && !Array.isArray(v);
+const hasOwn = (o,k) => Object.prototype.hasOwnProperty.call(o,k);
+function cleanMap(v, check){
+  const out = {};
+  if(!isPlainObj(v)) return out;
+  Object.keys(v).forEach(k=>{ if(k!=="__proto__" && check(v[k])) out[k] = v[k]; });
+  return out;
+}
+
+// Validates one profile and fills any missing property from current defaults.
+// Returns null if the profile is structurally unusable.
+function normalizeBucket(raw, fallbackName, def, subjMap, topicMap){
+  if(!isPlainObj(raw) || !Array.isArray(raw.subjects) || !raw.subjects.length) return null;
+  for(const sub of raw.subjects){
+    if(!isPlainObj(sub) || typeof sub.id!=="string" || !Array.isArray(sub.chapters)) return null;
+    for(const ch of sub.chapters){
+      if(!isPlainObj(ch) || !Array.isArray(ch.topics)) return null;
+      for(const t of ch.topics){ if(!isPlainObj(t) || typeof t.id!=="string") return null; }
+    }
+  }
+  const dailyManual = cleanMap(raw.dailyManual, Array.isArray);
+  Object.keys(dailyManual).forEach(k=>{ dailyManual[k] = dailyManual[k].filter(isPlainObj); });
+  return {
+    ...def, ...raw,
+    displayName: (typeof raw.displayName==="string" && raw.displayName.trim()) ? raw.displayName : fallbackName,
+    subjects: raw.subjects.map(sub=>({
+      ...(subjMap[sub.id]||{}), ...sub,
+      chapters: sub.chapters.map(ch=>({...ch, topics: ch.topics.map(t=>({...(topicMap[t.id]||{}), ...t}))})),
+    })),
+    sessions: Array.isArray(raw.sessions) ? raw.sessions.filter(isPlainObj) : [],
+    dailyMinutesDefault: Number.isFinite(raw.dailyMinutesDefault) ? raw.dailyMinutesDefault : def.dailyMinutesDefault,
+    examDate: typeof raw.examDate==="string" ? raw.examDate : def.examDate,
+    dailyTime: cleanMap(raw.dailyTime, Number.isFinite),
+    dailyManual,
+    dismissedAuto: cleanMap(raw.dismissedAuto, Array.isArray),
+    autoFillOn: cleanMap(raw.autoFillOn, v=>typeof v==="boolean"),
+    examFocus: {...def.examFocus, ...(isPlainObj(raw.examFocus) ? raw.examFocus : {})},
+  };
+}
+
+// strict=true (import): any bad profile rejects the whole file.
+// strict=false (startup load): bad profiles are skipped, good ones are kept.
+function normalizeStore(rawStore, strict){
+  if(!isPlainObj(rawStore)) return null;
+  const def = newProfileBucket("Guest", false);
+  const subjMap = {}, topicMap = {};
+  def.subjects.forEach(sub=>{ subjMap[sub.id]=sub; sub.chapters.forEach(c=>c.topics.forEach(t=>{ topicMap[t.id]=t; })); });
+  const out = {};
+  for(const k of Object.keys(rawStore)){
+    if(k==="__proto__") continue;
+    const nb = normalizeBucket(rawStore[k], k, def, subjMap, topicMap);
+    if(nb) out[k] = nb; else if(strict) return null;
+  }
+  return Object.keys(out).length ? out : null;
+}
+
+// Validates a parsed backup/storage envelope. Never throws, never mutates app state.
+function parseBackup(data, strict){
+  if(!isPlainObj(data) || data.app!==BACKUP_APP) return {ok:false, error:"notbackup"};
+  let cur = data, v = data.version;
+  if(!Number.isInteger(v) || v<1) return {ok:false, error:"badversion"};
+  if(v>BACKUP_VERSION) return {ok:false, error:"newer"};
+  while(v<BACKUP_VERSION){
+    const migrate = BACKUP_MIGRATIONS[v];
+    if(!migrate) return {ok:false, error:"badversion"};
+    cur = migrate(cur);
+    if(!isPlainObj(cur) || !Number.isInteger(cur.version) || cur.version<=v) return {ok:false, error:"badversion"};
+    v = cur.version;
+  }
+  const store = normalizeStore(cur.profilesStore, strict);
+  if(!store) return {ok:false, error:"nostore"};
+  const key = (typeof cur.currentKey==="string" && hasOwn(store,cur.currentKey)) ? cur.currentKey : null;
+  return {ok:true, profilesStore:store, currentKey:key};
+}
+
+function buildBackupPayload(profilesStore, currentKey, stampField){
+  return {app:BACKUP_APP, version:BACKUP_VERSION, [stampField]:new Date().toISOString(), currentKey, profilesStore};
+}
+
+function readStorage(){
+  let raw = null;
+  try{
+    raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return null;
+    const r = parseBackup(JSON.parse(raw), false);
+    if(r.ok) return r;
+  }catch(e){}
+  // Unreadable data: keep a copy for recovery, then start from defaults.
+  try{ if(raw) localStorage.setItem(STORAGE_KEY+"_corrupt", raw); }catch(e){}
+  return null;
+}
+
+function writeStorage(profilesStore, currentKey){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(buildBackupPayload(profilesStore,currentKey,"savedAt")));
+    return {ok:true};
+  }catch(e){
+    return {ok:false};
+  }
+}
+
+function localDateStamp(){
+  const d = new Date(), p = n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+
+function readFileText(file){
+  if(file.text) return file.text();
+  return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=()=>rej(r.error); r.readAsText(file); });
+}
+
+function fileToDataURL(file){
+  return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=()=>rej(r.error); r.readAsDataURL(file); });
+}
+// Phone photos are often 3-8 MB; localStorage only holds ~5 MB in total. Downscale
+// to max 1280px JPEG before storing. Falls back to the untouched original on any problem.
+async function photoToDataURL(file){
+  const src = await fileToDataURL(file);
+  try{
+    if(!/^image\/(jpe?g|png|webp)$/i.test(file.type)) return src;
+    const img = await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; });
+    const scale = Math.min(1, 1280/Math.max(img.width,img.height));
+    const c = document.createElement("canvas");
+    c.width = Math.max(1,Math.round(img.width*scale)); c.height = Math.max(1,Math.round(img.height*scale));
+    const ctx = c.getContext("2d");
+    ctx.fillStyle = "#fff"; ctx.fillRect(0,0,c.width,c.height);
+    ctx.drawImage(img,0,0,c.width,c.height);
+    const out = c.toDataURL("image/jpeg",0.8);
+    return out.length < src.length ? out : src;
+  }catch(e){ return src; }
+}
+
+const Ctx = createContext(null);
+const useApp = () => useContext(Ctx);
+
+function newProfileBucket(name, demo){
+  return {
+    displayName: name,
+    subjects: demo ? buildDemoSubjects() : buildInitialSubjects(),
+    sessions: demo ? seedDemoSessions() : [],
+    dailyMinutesDefault: 240,
+    examDate: "2027-02-15",
+    dailyTime: {},      // { "2026-09-13": 180, ... }
+    dailyManual: {},    // { "2026-09-13": [{topicId,minutes}], ... }
+    dismissedAuto: {},  // { "2026-09-13": [topicId, ...] }
+    autoFillOn: {},      // { "2026-09-13": true/false }
+    examFocus: { enabled:false, subjectId:null, examDate:"", focusOnly:false },
+  };
+}
+
+function AppProvider({children}){
+  const [saved] = useState(readStorage);   // read localStorage once, at startup
+  const [profilesStore,setProfilesStore] = useState(()=> saved ? saved.profilesStore : {});
+  const [currentKey,setCurrentKey] = useState(()=> saved ? saved.currentKey : null);
+  const [page,setPage] = useState(()=> (saved && saved.currentKey) ? "dashboard" : "landing");
+  const [activeTopicId,setActiveTopicId] = useState(null);
+  const [toast,setToast] = useState(null);
+  const intervals = REVISION_INTERVALS_DEFAULT;
+  const todayKey = useMemo(()=> new Date().toISOString().slice(0,10), []);
+
+  const showToast = useCallback((msg,ms)=> setToast({msg,id:Date.now(),ms}), []);
+  useEffect(()=>{ if(!toast) return; const t=setTimeout(()=>setToast(null),toast.ms||2500); return ()=>clearTimeout(t); },[toast]);
+
+  // ---- Persistence: save profilesStore + currentKey (debounced), never UI state ----
+  const latestRef = useRef({profilesStore,currentKey});
+  latestRef.current = {profilesStore,currentKey};
+  const dirtyRef = useRef(false);
+  const firstRunRef = useRef(true);
+  const saveFailedRef = useRef(false);
+  const flushSave = useCallback(()=>{
+    if(!dirtyRef.current) return;
+    const {profilesStore:store,currentKey:key} = latestRef.current;
+    dirtyRef.current = false;
+    if(!Object.keys(store).length) return;
+    const r = writeStorage(store,key);
+    if(!r.ok && !saveFailedRef.current) showToast("Couldn't save to this browser (storage may be full). Please export a backup.",6000);
+    saveFailedRef.current = !r.ok;
+  },[showToast]);
+  useEffect(()=>{
+    if(firstRunRef.current){ firstRunRef.current=false; return; }   // nothing changed yet
+    dirtyRef.current = true;
+    const t = setTimeout(flushSave,300);
+    return ()=>clearTimeout(t);
+  },[profilesStore,currentKey,flushSave]);
+  useEffect(()=>{
+    const onVis = ()=>{ if(document.visibilityState==="hidden") flushSave(); };
+    window.addEventListener("pagehide",flushSave);
+    document.addEventListener("visibilitychange",onVis);
+    return ()=>{ window.removeEventListener("pagehide",flushSave); document.removeEventListener("visibilitychange",onVis); };
+  },[flushSave]);
+
+  const bucket = currentKey ? profilesStore[currentKey] : null;
+
+  const patchBucket = useCallback((fn)=>{
+    setProfilesStore(prev=>{
+      if(!currentKey || !prev[currentKey]) return prev;
+      return {...prev, [currentKey]: fn(prev[currentKey])};
+    });
+  },[currentKey]);
+
+  const switchProfile = useCallback((name, opts)=>{
+    const clean = (name||"guest").trim();
+    const key = clean.toLowerCase();
+    setProfilesStore(prev=> prev[key] ? prev : {...prev, [key]: newProfileBucket(clean||"Guest", !!(opts&&opts.demo))});
+    setCurrentKey(key);
+  },[]);
+
+  const updateTopic = useCallback((topicId, patch)=>{
+    patchBucket(b=>({...b, subjects: b.subjects.map(s=>({...s, chapters: s.chapters.map(c=>({...c, topics:c.topics.map(t=> t.id===topicId?{...t,...patch}:t)}))}))}));
+  },[patchBucket]);
+
+  const updateSubjectMeta = useCallback((subjectId, patch)=>{
+    patchBucket(b=>({...b, subjects: b.subjects.map(s=> s.id===subjectId?{...s,...patch}:s)}));
+  },[patchBucket]);
+
+  const logSession = useCallback((topic, subjectId, minutes)=>{
+    patchBucket(b=>({
+      ...b,
+      sessions:[{id:"sess-"+Date.now(), subjectId, topicName:`${topic.chapter} › ${topic.name}`, minutes, date:new Date().toISOString()}, ...b.sessions],
+      subjects: b.subjects.map(s=>({...s, chapters: s.chapters.map(c=>({...c, topics:c.topics.map(t=> t.id===topic.id?{...t, completed:true, lastStudied:new Date().toISOString()}:t)}))}))
+    }));
+  },[patchBucket]);
+
+  const setTodayMinutes = useCallback((mins)=>{
+    patchBucket(b=>({...b, dailyTime:{...b.dailyTime,[todayKey]:mins}}));
+    showToast(`Today's study time set to ${fmtHM(mins)}`);
+  },[patchBucket,todayKey,showToast]);
+
+  const addManualTopic = useCallback((topic, minutes)=>{
+    let added=false;
+    patchBucket(b=>{
+      const list = b.dailyManual[todayKey]||[];
+      if(list.find(m=>m.topicId===topic.id)) return b;
+      added=true;
+      const dismissed = (b.dismissedAuto[todayKey]||[]).filter(id=>id!==topic.id);
+      return {...b, dailyManual:{...b.dailyManual, [todayKey]:[...list,{topicId:topic.id, minutes}]}, dismissedAuto:{...b.dismissedAuto,[todayKey]:dismissed}};
+    });
+    showToast(`Added "${topic.name}" to today's plan`);
+  },[patchBucket,todayKey,showToast]);
+
+  const removeManualItem = useCallback((topicId)=>{
+    patchBucket(b=>({...b, dailyManual:{...b.dailyManual,[todayKey]:(b.dailyManual[todayKey]||[]).filter(m=>m.topicId!==topicId)}}));
+  },[patchBucket,todayKey]);
+
+  const dismissAutoItem = useCallback((topicId)=>{
+    patchBucket(b=>{
+      const set = new Set(b.dismissedAuto[todayKey]||[]); set.add(topicId);
+      return {...b, dismissedAuto:{...b.dismissedAuto,[todayKey]:[...set]}};
+    });
+  },[patchBucket,todayKey]);
+
+  const toggleAutoFill = useCallback(()=>{
+    patchBucket(b=>{
+      const cur = b.autoFillOn[todayKey] ?? true;
+      return {...b, autoFillOn:{...b.autoFillOn,[todayKey]: !cur}, dismissedAuto:{...b.dismissedAuto,[todayKey]:[]}};
+    });
+  },[patchBucket,todayKey]);
+
+  const setExamFocus = useCallback((patch)=>{ patchBucket(b=>({...b, examFocus:{...b.examFocus, ...patch}})); },[patchBucket]);
+  const setExamDate = useCallback((date)=>{ patchBucket(b=>({...b, examDate:date})); },[patchBucket]);
+  const setDailyMinutesDefault = useCallback((mins)=>{ patchBucket(b=>({...b, dailyMinutesDefault:mins})); },[patchBucket]);
+  const setDisplayName = useCallback((name)=>{ patchBucket(b=>({...b, displayName:name})); },[patchBucket]);
+  const resetCurrentProfile = useCallback(()=>{ patchBucket(b=> newProfileBucket(b.displayName,false)); },[patchBucket]);
+
+  // ---- Export / Import backup ----
+  const exportBackup = useCallback(()=>{
+    try{
+      if(!Object.keys(profilesStore).length){ showToast("Nothing to export yet."); return; }
+      const json = JSON.stringify(buildBackupPayload(profilesStore,currentKey,"exportedAt"),null,2);
+      const url = URL.createObjectURL(new Blob([json],{type:"application/json"}));
+      const a = document.createElement("a");
+      a.href = url; a.download = `studywise-backup-${localDateStamp()}.json`; a.style.display = "none";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(()=>URL.revokeObjectURL(url),10000);
+      try{ localStorage.setItem(LAST_EXPORT_KEY, new Date().toISOString()); }catch(e){}
+      showToast("Backup exported successfully.");
+    }catch(e){
+      showToast("Couldn't create the backup file.",4000);
+    }
+  },[profilesStore,currentKey,showToast]);
+
+  const importBackupFile = useCallback(async (file)=>{
+    if(!file) return false;
+    // 1) read + parse + validate everything BEFORE touching current data
+    let parsed;
+    try{ parsed = JSON.parse(await readFileText(file)); }
+    catch(e){ showToast("Invalid or incompatible backup file.",4000); return false; }
+    const r = parseBackup(parsed,true);
+    if(!r.ok){
+      showToast(r.error==="newer" ? "This backup was made by a newer version of StudyWise. Please update the app first."
+              : r.error==="badversion" ? "Unsupported backup version."
+              : "Invalid or incompatible backup file.", 4500);
+      return false;
+    }
+    // 2) confirm
+    const n = Object.keys(r.profilesStore).length;
+    if(!window.confirm("This will replace your current StudyWise data with the backup. Continue?\n\n(The backup contains "+n+" profile"+(n===1?"":"s")+".)")) return false;
+    // 3) replace state + save immediately
+    const key = r.currentKey || ((currentKey && hasOwn(r.profilesStore,currentKey)) ? currentKey : Object.keys(r.profilesStore)[0]);
+    setProfilesStore(r.profilesStore);
+    setCurrentKey(key);
+    setActiveTopicId(null);
+    const w = writeStorage(r.profilesStore,key);
+    dirtyRef.current = false;
+    saveFailedRef.current = !w.ok;
+    if(w.ok) showToast("Backup imported successfully.");
+    else showToast("Backup imported, but this browser couldn't save it (storage may be full). Please export a backup soon.",6000);
+    return true;
+  },[currentKey,showToast]);
+
+  const daysToExam = useMemo(()=>{ if(!bucket||!bucket.examDate) return null; return Math.ceil((new Date(bucket.examDate).getTime()-Date.now())/86400000); },[bucket && bucket.examDate]);
+  const daysToFocusExam = useMemo(()=>{ if(!bucket||!bucket.examFocus.examDate) return null; return Math.ceil((new Date(bucket.examFocus.examDate).getTime()-Date.now())/86400000); },[bucket && bucket.examFocus && bucket.examFocus.examDate]);
+
+  // Requirement #4: automatically return to normal planning once the focus exam date has passed.
+  useEffect(()=>{
+    if(bucket && bucket.examFocus.enabled && daysToFocusExam!=null && daysToFocusExam<0){
+      setExamFocus({enabled:false});
+      showToast("Exam Focus ended — back to your balanced plan");
+    }
+  },[daysToFocusExam]);
+
+  const value = {
+    subjects: bucket ? bucket.subjects : [],
+    sessions: bucket ? bucket.sessions : [],
+    dailyTime: bucket ? bucket.dailyTime : {},
+    dailyManual: bucket ? bucket.dailyManual : {},
+    dismissedAuto: bucket ? bucket.dismissedAuto : {},
+    autoFillOn: bucket ? bucket.autoFillOn : {},
+    examFocus: bucket ? bucket.examFocus : {enabled:false,subjectId:null,examDate:"",focusOnly:false},
+    examDate: bucket ? bucket.examDate : "",
+    dailyMinutesDefault: bucket ? bucket.dailyMinutesDefault : 240,
+    displayName: bucket ? bucket.displayName : "",
+    currentKey, todayKey, intervals, daysToExam, daysToFocusExam,
+    page, setPage, activeTopicId, setActiveTopicId,
+    updateTopic, updateSubjectMeta, logSession,
+    setTodayMinutes, addManualTopic, removeManualItem, dismissAutoItem, toggleAutoFill,
+    setExamFocus, setExamDate, setDailyMinutesDefault, setDisplayName,
+    switchProfile, resetCurrentProfile,
+    exportBackup, importBackupFile, profileCount:Object.keys(profilesStore).length,
+    toast, showToast,
+  };
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+}
+
+// Combines manual selections + live smart auto-fill for "today". Shared by
+// the Dashboard and the Smart Planner page so both stay in sync (req. #8).
+function useDayPlan(){
+  const app = useApp();
+  const { subjects, dailyTime, dailyMinutesDefault, dailyManual, dismissedAuto, autoFillOn, examFocus, daysToExam, intervals, todayKey } = app;
+  const totalMinutes = dailyTime[todayKey] ?? dailyMinutesDefault;
+  const manualEntries = dailyManual[todayKey] || [];
+  const dismissedIds = dismissedAuto[todayKey] || [];
+  const autoOn = autoFillOn[todayKey] ?? true;
+
+  const manualItems = useMemo(()=>{
+    const flat = allTopics(subjects);
+    return manualEntries.map(m=>{
+      const t = flat.find(x=>x.id===m.topicId);
+      if(!t) return null;
+      const subject = subjects.find(s=>s.id===t.subjectId);
+      return { topic:t, subject, minutes:m.minutes, source:"manual", score:null, reason:"You added this topic to today's plan." };
+    }).filter(Boolean);
+  // eslint-disable-next-line
+  },[JSON.stringify(manualEntries), subjects]);
+
+  const usedByManual = manualItems.reduce((a,i)=>a+i.minutes,0);
+  const remainingAfterManual = Math.max(0, totalMinutes-usedByManual);
+
+  const autoItems = useMemo(()=>{
+    if(!autoOn) return [];
+    const excludeIds = new Set([...manualEntries.map(m=>m.topicId), ...dismissedIds]);
+    return computeAutoFill(subjects, excludeIds, remainingAfterManual, daysToExam, intervals, examFocus);
+  // eslint-disable-next-line
+  },[autoOn, JSON.stringify(manualEntries), JSON.stringify(dismissedIds), remainingAfterManual, subjects, daysToExam, intervals, examFocus]);
+
+  const usedByAuto = autoItems.reduce((a,i)=>a+i.minutes,0);
+  const remainingMinutes = totalMinutes - usedByManual - usedByAuto;
+
+  return { totalMinutes, manualItems, autoItems, usedByManual, usedByAuto, remainingMinutes, autoOn };
+}
+
+/* =========================================================================
+   4. SHARED UI PIECES
+   ========================================================================= */
+function ProgressBar({value,color="var(--teal)",height=9}){
+  return (
+    <div className="progress-track" style={{height}}>
+      <div className="progress-fill" style={{width:`${Math.max(2,value)}%`,background:color}}/>
+    </div>
+  );
+}
+
+function subjectCompletion(subject){
+  const flat = subject.chapters.flatMap(c=>c.topics);
+  if(!flat.length) return 0;
+  return Math.round(100*flat.filter(t=>t.completed).length/flat.length);
+}
+
+function PriorityDot({score}){
+  if(score==null) return <span className="pill" style={{background:"var(--teal-soft)",color:"var(--teal)"}}>● your pick</span>;
+  const color = score>=75?"var(--coral)":score>=45?"var(--marigold-deep)":"var(--green)";
+  return <span className="pill" style={{background:color+"18",color}}>● {score}</span>;
+}
+
+function TimeChips({value,onChange}){
+  const opts=[30,60,120,180,240,300];
+  const [custom,setCustom]=useState("");
+  const commit = ()=>{ const n=Number(custom); if(n>0){ onChange(n); setCustom(""); } };
+  return (
+    <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+      {opts.map(m=>(
+        <button key={m} className="btn btn-sm" onClick={()=>onChange(m)} style={{
+          background:value===m?"var(--marigold)":"var(--panel)", color:value===m?"var(--navy)":"var(--ink)", border:"1px solid var(--line)"
+        }}>{m<60? m+"m": fmtHM(m)}</button>
+      ))}
+      <input className="sw-custom" type="number" min="10" placeholder="Custom min" value={custom} onChange={e=>setCustom(e.target.value)}
+        onKeyDown={e=>{ if(e.key==="Enter") commit(); }}
+        style={{width:104,padding:"8px 10px",border:"1px solid var(--line)",borderRadius:999,fontSize:13}}/>
+      <button className="btn btn-sm btn-ghost" onClick={commit}>Set</button>
+    </div>
+  );
+}
+
+const NAV = [
+  {id:"dashboard", label:"Dashboard", icon:"⌂"},
+  {id:"planner", label:"Smart Planner", icon:"✦"},
+  {id:"subjects", label:"Subjects", icon:"▤"},
+  {id:"timer", label:"Timer", icon:"◷"},
+  {id:"progress", label:"Progress", icon:"▲"},
+  {id:"revision", label:"Revision", icon:"↻"},
+  {id:"notes", label:"Notes", icon:"✎"},
+  {id:"settings", label:"Settings", icon:"⚙"},
+];
+
+function Shell({children}){
+  const app = useApp();
+  const {page,setPage,examDate,daysToExam,subjects,setActiveTopicId,examFocus,toast} = app;
+  const [query,setQuery] = useState("");
+  const [showSearch,setShowSearch] = useState(false);
+
+  const results = useMemo(()=>{
+    if(query.trim().length<2) return [];
+    const q=query.toLowerCase();
+    return allTopics(subjects).filter(t=>
+      t.name.toLowerCase().includes(q) || t.chapter.toLowerCase().includes(q) ||
+      t.book.toLowerCase().includes(q) || t.subjectName.toLowerCase().includes(q)
+    ).slice(0,8);
+  },[query,subjects]);
+
+  useEffect(()=>{   // phone: keep the active tab visible in the scrolling nav bar
+    const el = document.querySelector(".sw-nav button.sw-on"); const nav = el && el.parentElement;
+    if(nav && nav.scrollWidth>nav.clientWidth) nav.scrollTo({left: el.getBoundingClientRect().left - nav.getBoundingClientRect().left + nav.scrollLeft - (nav.clientWidth-el.offsetWidth)/2});
+  },[page]);
+
+  const focusSubject = examFocus.enabled ? subjects.find(s=>s.id===examFocus.subjectId) : null;
+
+  return (
+    <div className="sw-shell" style={{display:"flex",minHeight:"100vh"}}>
+      <aside className="sw-side" style={{
+        width:236, background:"var(--navy)", color:"#fff", padding:"26px 18px",
+        display:"flex",flexDirection:"column",gap:22, position:"sticky",top:0,height:"100vh"
+      }}>
+        <div className="sw-brand" style={{display:"flex",alignItems:"center",gap:10,padding:"0 6px"}}>
+          <div style={{width:34,height:34,borderRadius:10,background:"var(--marigold)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"Fraunces",fontWeight:700,color:"var(--navy)"}}>S</div>
+          <div>
+            <div style={{fontFamily:"Fraunces",fontWeight:600,fontSize:17,lineHeight:1}}>StudyWise</div>
+            <div style={{fontSize:10,opacity:0.55,letterSpacing:'.03em'}}>CBSE XII · Arts</div>
+          </div>
+        </div>
+
+        <button className="sw-search" onClick={()=>setShowSearch(true)} style={{
+          background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.14)",color:"rgba(255,255,255,0.75)",
+          borderRadius:10,padding:"9px 12px",fontSize:13,textAlign:"left",display:"flex",gap:8,alignItems:"center"
+        }}>🔍<span className="sw-hide-m"> Search topics…</span></button>
+
+        <nav className="sw-nav" style={{display:"flex",flexDirection:"column",gap:3}}>
+          {NAV.map(n=>(
+            <button key={n.id} className={page===n.id?"sw-on":""} onClick={()=>setPage(n.id)} style={{
+              display:"flex",alignItems:"center",gap:11,padding:"10px 12px",borderRadius:10,border:"none",
+              background: page===n.id?"rgba(232,161,61,0.16)":"transparent",
+              color: page===n.id?"#f3cd8f":"rgba(255,255,255,0.72)",
+              fontWeight: page===n.id?700:600, fontSize:14, textAlign:"left"
+            }}>
+              <span style={{width:18,textAlign:"center",opacity:0.9}}>{n.icon}</span>{n.label}
+            </button>
+          ))}
+        </nav>
+
+        {focusSubject && (
+          <div className="focus-glow sw-focus" style={{background:"rgba(213,87,59,0.18)",border:"1px solid rgba(213,87,59,0.4)",borderRadius:12,padding:"10px 12px"}}>
+            <div style={{fontSize:10.5,opacity:0.75,marginBottom:2}}>🎯 Exam Focus</div>
+            <div style={{fontSize:13,fontWeight:700,color:"#ffb199"}}>{focusSubject.name}</div>
+          </div>
+        )}
+
+        <div className="sw-cd" style={{marginTop:"auto",background:"rgba(255,255,255,0.06)",borderRadius:12,padding:"12px 14px"}}>
+          <div className="sw-hide-m" style={{fontSize:11,opacity:0.55,marginBottom:4}}>Board exam countdown</div>
+          <div className="sw-cd-n" style={{fontFamily:"Fraunces",fontSize:22,fontWeight:600,color:"#f3cd8f"}}>{daysToExam ?? "—"} days</div>
+          <div className="sw-hide-m" style={{fontSize:11,opacity:0.5,marginTop:2}}>{examDate}</div>
+        </div>
+      </aside>
+
+      <main className="sw-main" style={{flex:1,minWidth:0}}>
+        <div key={page} className="anim-in">{children}</div>
+      </main>
+
+      {showSearch && (
+        <div onClick={()=>setShowSearch(false)} style={{position:"fixed",inset:0,background:"rgba(21,28,51,0.45)",zIndex:50,display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:"9vh"}}>
+          <div onClick={e=>e.stopPropagation()} className="card anim-in" style={{width:560,maxWidth:"90vw",padding:6,boxShadow:"0 30px 60px -20px rgba(0,0,0,.4)"}}>
+            <input autoFocus value={query} onChange={e=>setQuery(e.target.value)}
+              placeholder="Search subjects, chapters or topics — e.g. “Federalism”"
+              style={{width:"100%",border:"none",outline:"none",padding:"14px 16px",fontSize:15,borderBottom: results.length?"1px solid var(--line)":"none"}}/>
+            <div style={{maxHeight:340,overflowY:"auto"}}>
+              {results.map(t=>(
+                <button key={t.id} onClick={()=>{setActiveTopicId(t.id); setPage("subjects"); setShowSearch(false); setQuery("");}}
+                  style={{display:"block",width:"100%",textAlign:"left",padding:"11px 16px",border:"none",background:"none",borderBottom:"1px solid var(--line)"}}>
+                  <div style={{fontSize:13.5,fontWeight:700}}>{t.name}</div>
+                  <div className="faint" style={{fontSize:12}}>{t.subjectName} › {t.chapter}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className="toast-in sw-toast" style={{position:"fixed",bottom:26,right:26,maxWidth:"calc(100vw - 52px)",zIndex:60,background:"var(--navy)",color:"#fff",padding:"13px 20px",borderRadius:12,fontSize:13.5,fontWeight:600,boxShadow:"0 14px 30px -10px rgba(0,0,0,.4)"}}>
+          {toast.msg}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PageHeader({eyebrow,title,subtitle,right}){
+  return (
+    <div className="sw-pagehead" style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:20,padding:"34px 36px 22px",flexWrap:"wrap"}}>
+      <div>
+        {eyebrow && <div style={{fontSize:12.5,color:"var(--teal)",fontWeight:700,marginBottom:6}}>{eyebrow}</div>}
+        <h1 className="sw-h1" style={{margin:0,fontSize:30,fontWeight:600}}>{title}</h1>
+        {subtitle && <p className="muted" style={{margin:"6px 0 0",fontSize:14.5,maxWidth:620}}>{subtitle}</p>}
+      </div>
+      {right}
+    </div>
+  );
+}
+
+/* =========================================================================
+   5. LANDING PAGE  (animated)
+   ========================================================================= */
+function Landing(){
+  const {setPage,switchProfile,importBackupFile} = useApp();
+  const restoreRef = useRef(null);
+  const [loaded,setLoaded] = useState(false);
+  useEffect(()=>{ const t=setTimeout(()=>setLoaded(true),60); return ()=>clearTimeout(t); },[]);
+  const [count,setCount] = useState(0);
+  useEffect(()=>{
+    if(!loaded) return;
+    const target = 91; let f=0;
+    const iv = setInterval(()=>{ f++; setCount(Math.round(target*(1-Math.pow(1-f/40,3)))); if(f>=40) clearInterval(iv); },20);
+    return ()=>clearInterval(iv);
+  },[loaded]);
+
+  const icons = [
+    {label:"Pol. Sci.", emoji:"⚖", top:"12%", left:"6%", delay:0.15},
+    {label:"History", emoji:"🏛", top:"66%", left:"9%", delay:0.35},
+    {label:"Sociology", emoji:"◎", top:"20%", left:"88%", delay:0.25},
+    {label:"Economics", emoji:"₹", top:"72%", left:"90%", delay:0.45},
+    {label:"English", emoji:"✒", top:"46%", left:"3%", delay:0.55},
+  ];
+
+  return (
+    <div style={{minHeight:"100vh",background:"var(--navy)",color:"#fff",position:"relative",overflow:"hidden"}}>
+      <style>{`
+        @keyframes blobMove{0%{transform:translate(0,0) scale(1);}50%{transform:translate(30px,-20px) scale(1.08);}100%{transform:translate(0,0) scale(1);}}
+        @keyframes floatY{0%,100%{transform:translateY(0);}50%{transform:translateY(-14px);}}
+        @keyframes riseIn{from{opacity:0;transform:translateY(26px);}to{opacity:1;transform:translateY(0);}}
+        .blob{position:absolute;border-radius:50%;filter:blur(60px);animation:blobMove 14s ease-in-out infinite;}
+        .float-icon{animation:floatY 5s ease-in-out infinite;}
+        .land-in{opacity:0;animation:riseIn .8s cubic-bezier(.22,.9,.32,1) forwards;}
+      `}</style>
+
+      <div className="blob" style={{width:460,height:460,background:"radial-gradient(circle,#e8a13d55,transparent 70%)",top:"-140px",right:"-100px"}}/>
+      <div className="blob" style={{width:380,height:380,background:"radial-gradient(circle,#1f7a6c55,transparent 70%)",bottom:"-120px",left:"-80px",animationDelay:"2s"}}/>
+
+      {icons.map((ic,i)=>(
+        <div key={i} className="float-icon sw-float" style={{
+          position:"absolute",top:ic.top,left:ic.left,animationDelay:ic.delay+"s",
+          opacity: loaded?0.9:0, transition:"opacity .8s ease "+(ic.delay+0.3)+"s"
+        }}>
+          <div style={{
+            width:58,height:58,borderRadius:16,background:"rgba(255,255,255,0.06)",
+            border:"1px solid rgba(255,255,255,0.14)",display:"flex",alignItems:"center",justifyContent:"center",
+            fontSize:24,backdropFilter:"blur(6px)"
+          }}>{ic.emoji}</div>
+          <div style={{fontSize:11,opacity:0.55,textAlign:"center",marginTop:6}}>{ic.label}</div>
+        </div>
+      ))}
+
+      <nav className="sw-lnav" style={{position:"relative",zIndex:2,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"26px 40px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <div style={{width:32,height:32,borderRadius:9,background:"var(--marigold)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"Fraunces",fontWeight:700,color:"var(--navy)"}}>S</div>
+          <span style={{fontFamily:"Fraunces",fontWeight:600,fontSize:18}}>StudyWise</span>
+        </div>
+        <span style={{fontSize:12.5,opacity:0.6}}>CBSE {CBSE_SESSION} session</span>
+      </nav>
+
+      <div className="container sw-hero" style={{position:"relative",zIndex:2,display:"flex",alignItems:"center",minHeight:"78vh",flexWrap:"wrap",gap:50,padding:"20px 28px 60px"}}>
+        <div style={{flex:"1 1 480px",maxWidth:600}}>
+          <div className="land-in" style={{animationDelay:".05s"}}>
+            <span className="pill sw-lpill" style={{background:"rgba(232,161,61,0.16)",color:"#f3cd8f"}}>● Built for Class 12 Arts · Political Science · History · Sociology · Economics · English Core</span>
+          </div>
+          <h1 className="land-in" style={{animationDelay:".15s",fontSize:"clamp(32px,5vw,58px)",lineHeight:1.05,margin:"20px 0 0",fontWeight:600}}>
+            Study smarter.<br/>Know exactly what<br/>to study <em style={{fontStyle:"italic",color:"var(--marigold)"}}>next</em>.
+          </h1>
+          <p className="land-in" style={{animationDelay:".28s",fontSize:16.5,opacity:0.72,marginTop:18,maxWidth:460,lineHeight:1.6}}>
+            A smart study planner built for CBSE Class 12 Humanities students. You decide how much time you have and what you want to study — StudyWise fills the rest, balances your subjects, and tells you exactly why.
+          </p>
+          <div className="land-in sw-lbtns" style={{animationDelay:".4s",marginTop:30,display:"flex",gap:14,flexWrap:"wrap"}}>
+            <button className="btn btn-primary" onClick={()=>setPage("setup")}>Start My Study Plan →</button>
+            <button className="btn btn-ghost" style={{color:"#fff",borderColor:"rgba(255,255,255,0.3)"}} onClick={()=>{switchProfile("Demo Student",{demo:true}); setPage("dashboard");}}>See a live demo</button>
+            <button className="btn btn-ghost" style={{color:"#fff",borderColor:"rgba(255,255,255,0.3)"}} onClick={()=>restoreRef.current && restoreRef.current.click()}>⬆ Restore from backup</button>
+            <input ref={restoreRef} type="file" style={{display:"none"}} onChange={async e=>{ const f=e.target.files && e.target.files[0]; e.target.value=""; if(f && await importBackupFile(f)) setPage("dashboard"); }}/>
+          </div>
+          <div className="land-in sw-stats" style={{animationDelay:".55s",display:"flex",gap:28,marginTop:38,flexWrap:"wrap"}}>
+            {[["5","subjects mapped"],["71","chapters structured"],[count+"%","syllabus pre-loaded"]].map(([n,l],i)=>(
+              <div key={i}>
+                <div style={{fontFamily:"Fraunces",fontSize:26,fontWeight:600,color:"var(--marigold)"}}>{n}</div>
+                <div style={{fontSize:12,opacity:0.6}}>{l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="land-in" style={{animationDelay:".3s",flex:"1 1 360px",maxWidth:420}}>
+          <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:24,padding:22,backdropFilter:"blur(8px)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+              <span style={{fontSize:13,fontWeight:700,opacity:0.8}}>Today's Study Plan</span>
+              <span style={{fontSize:11,opacity:0.5}}>smart + your picks</span>
+            </div>
+            {[
+              {s:"Economics",t:"National Income",d:"🔴",m:"50 min",p:"92",c:"#d5573b"},
+              {s:"Political Science",t:"Recent Developments in Indian Politics",d:"🟡",m:"45 min",p:"you added",c:"#1f7a6c"},
+              {s:"History",t:"Kings, Farmers and Towns",d:"🟡",m:"40 min",p:"76",c:"#c9821f"},
+            ].map((r,i)=>(
+              <div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderTop:i>0?"1px solid rgba(255,255,255,0.1)":"none"}}>
+                <div style={{width:26,height:26,borderRadius:8,background:r.c+"33",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700}}>{i+1}</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:13,fontWeight:700}}>{r.s}</div>
+                  <div style={{fontSize:11.5,opacity:0.6,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{r.d} {r.t}</div>
+                </div>
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontSize:12,fontWeight:700}}>{r.m}</div>
+                  <div style={{fontSize:10.5,opacity:0.55}}>{r.p==="you added"?"you added":"priority "+r.p+"%"}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div style={{position:"relative",zIndex:2,borderTop:"1px solid rgba(255,255,255,0.1)",padding:"18px 0",opacity:loaded?0.55:0,transition:"opacity 1s ease .8s"}}>
+        <div className="container sw-foot" style={{display:"flex",gap:30,fontSize:12.5,flexWrap:"wrap",justifyContent:"center"}}>
+          <span>Flexible daily hours</span><span className="sw-dot">·</span>
+          <span>Manual picks respected, never overridden</span><span className="sw-dot">·</span>
+          <span>Exam Focus Mode for one subject</span><span className="sw-dot">·</span>
+          <span>Every new student starts at 0%</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================================
+   6. SETUP
+   ========================================================================= */
+function Setup(){
+  const {switchProfile,setDailyMinutesDefault,setExamDate,updateSubjectMeta,subjects,setPage} = useApp();
+  const [step,setStep] = useState(0);
+  const [local,setLocal] = useState({name:"", dailyMinutes:240, examDate:"2027-02-15"});
+
+  const timeOptions=[120,180,240,300,360];
+
+  return (
+    <div className="sw-setup" style={{minHeight:"100vh",background:"var(--paper)",display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+      <div className="card anim-in sw-setup-card" style={{width:640,maxWidth:"100%",padding:"38px 40px",boxShadow:"var(--shadow)"}}>
+        <div style={{display:"flex",gap:6,marginBottom:28}}>
+          {[0,1,2].map(i=>(<div key={i} style={{flex:1,height:4,borderRadius:99,background: i<=step? "var(--marigold)":"var(--line)"}}/>))}
+        </div>
+
+        {step===0 && (
+          <div>
+            <h2 style={{marginTop:0}}>Let's set up your plan</h2>
+            <p className="muted">Class 12 · CBSE · Arts/Humanities stream — already set for you. Your progress starts at exactly 0% — nothing pre-filled.</p>
+            <label style={{fontSize:13,fontWeight:700}}>Your name</label>
+            <input value={local.name} onChange={e=>setLocal(l=>({...l,name:e.target.value}))} placeholder="e.g. Ananya"
+              style={{display:"block",width:"100%",padding:"12px 14px",border:"1px solid var(--line)",borderRadius:10,marginTop:6,marginBottom:20,fontSize:15}}/>
+            <label style={{fontSize:13,fontWeight:700}}>Board exam date</label>
+            <input type="date" value={local.examDate} onChange={e=>setLocal(l=>({...l,examDate:e.target.value}))}
+              style={{display:"block",width:"100%",padding:"12px 14px",border:"1px solid var(--line)",borderRadius:10,marginTop:6}}/>
+            <div style={{display:"flex",justifyContent:"flex-end",marginTop:26}}>
+              <button className="btn btn-dark" disabled={!local.name} onClick={()=>{ switchProfile(local.name); setStep(1); }}>Continue →</button>
+            </div>
+          </div>
+        )}
+
+        {step===1 && (
+          <div>
+            <h2 style={{marginTop:0}}>Your usual daily study time</h2>
+            <p className="muted">This is just a default — every day on your dashboard you can change how much time you actually have that day.</p>
+            <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:16}}>
+              {timeOptions.map(m=>(
+                <button key={m} onClick={()=>setLocal(l=>({...l,dailyMinutes:m}))}
+                  className="btn btn-sm" style={{
+                    background: local.dailyMinutes===m?"var(--navy)":"var(--panel)",
+                    color: local.dailyMinutes===m?"#fff":"var(--ink)",
+                    border:"1px solid var(--line)"
+                  }}>{m<360?fmtHM(m):"6+ hours"}</button>
+              ))}
+            </div>
+            <label style={{fontSize:13,fontWeight:700,display:"block",marginTop:18}}>Or enter a custom number of minutes</label>
+            <input type="number" min="30" value={local.dailyMinutes} onChange={e=>setLocal(l=>({...l,dailyMinutes:Number(e.target.value)||0}))}
+              style={{display:"block",width:180,padding:"10px 14px",border:"1px solid var(--line)",borderRadius:10,marginTop:6}}/>
+            <div style={{display:"flex",justifyContent:"space-between",marginTop:26}}>
+              <button className="btn btn-ghost" onClick={()=>setStep(0)}>← Back</button>
+              <button className="btn btn-dark" onClick={()=>{ setDailyMinutesDefault(local.dailyMinutes); setStep(2); }}>Continue →</button>
+            </div>
+          </div>
+        )}
+
+        {step===2 && (
+          <div>
+            <h2 style={{marginTop:0}}>Rate each subject</h2>
+            <p className="muted">Be honest — this is what keeps your plan balanced instead of biased toward favourites.</p>
+            <div style={{display:"flex",flexDirection:"column",gap:14,marginTop:14,maxHeight:340,overflowY:"auto",paddingRight:4}} className="scrollbar-thin">
+              {subjects.map(s=>(
+                <div key={s.id} style={{border:"1px solid var(--line)",borderRadius:12,padding:"12px 14px"}}>
+                  <div style={{fontWeight:700,fontSize:14,marginBottom:8,color:s.color}}>{s.name}</div>
+                  <div style={{display:"flex",gap:18,flexWrap:"wrap"}}>
+                    <RatingRow label="Interest" value={s.interest} onChange={v=>updateSubjectMeta(s.id,{interest:v})}/>
+                    <RatingRow label="Confidence" value={s.confidence} onChange={v=>updateSubjectMeta(s.id,{confidence:v})}/>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",marginTop:24}}>
+              <button className="btn btn-ghost" onClick={()=>setStep(1)}>← Back</button>
+              <button className="btn btn-primary" onClick={()=>{ setExamDate(local.examDate); setPage("dashboard"); }}>See my study plan →</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RatingRow({label,value,onChange}){
+  return (
+    <div>
+      <div style={{fontSize:11.5,color:"var(--ink-soft)",marginBottom:4}}>{label}</div>
+      <div style={{display:"flex",gap:3}}>
+        {[1,2,3,4,5].map(n=>(
+          <button key={n} className="sw-rate" onClick={()=>onChange(n)} style={{
+            width:22,height:22,borderRadius:6,border:"none",fontSize:11,fontWeight:700,transition:"background .15s ease, color .15s ease",
+            background: n<=value ? "var(--marigold)":"#eee", color: n<=value?"var(--navy)":"#999"
+          }}>{n}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================================
+   7. DASHBOARD  (flexible hours · manual+smart plan · exam focus)
+   ========================================================================= */
+function Dashboard(){
+  const app = useApp();
+  const {subjects,sessions,displayName,daysToExam,setPage,setActiveTopicId,
+         examFocus,setExamFocus,daysToFocusExam,
+         removeManualItem,dismissAutoItem,toggleAutoFill,setTodayMinutes,showToast,intervals} = app;
+  const dayPlan = useDayPlan();
+
+  const todaySessions = sessions.filter(s=> new Date(s.date).toDateString()===new Date().toDateString());
+  const todayMinutes = todaySessions.reduce((a,s)=>a+s.minutes,0);
+  const todayPct = Math.min(100, Math.round(100*todayMinutes/(dayPlan.totalMinutes||1)));
+  const overall = subjects.length ? Math.round(subjects.reduce((a,s)=>a+subjectCompletion(s),0)/subjects.length) : 0;
+
+  const dueRevisions = allTopics(subjects).filter(t=>isRevisionDue(t,intervals));
+  const allPlanItems = [...dayPlan.manualItems, ...dayPlan.autoItems];
+  const highPriority = allPlanItems.filter(p=>(p.score??0)>=75);
+
+  const [focusForm,setFocusForm] = useState({subjectId:subjects[0]?.id, examDate:"", focusOnly:false});
+
+  return (
+    <div>
+      <PageHeader
+        eyebrow="PIG front page"
+        title={`Good day, ${displayName || "there"} 👋`}
+        subtitle={`${daysToExam ?? "—"} days to your board exams · ${overall}% syllabus complete overall`}
+      />
+      <div className="container" style={{maxWidth:1100,paddingBottom:60}}>
+
+        {/* Flexible daily hours */}
+        <div className="card anim-in" style={{padding:"18px 22px",marginBottom:18}}>
+          <div style={{fontSize:13.5,fontWeight:700,marginBottom:10}}>How much time can you study today PIG be honest dont't take gap in it?</div>
+          <TimeChips value={dayPlan.totalMinutes} onChange={setTodayMinutes}/>
+        </div>
+
+        <div className="card anim-in" style={{padding:"22px 24px",marginBottom:18,background:"var(--navy)",color:"#fff",border:"none"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:8}}>
+            <span style={{fontSize:13,fontWeight:700,opacity:0.85}}>Today's Progress</span>
+            <span style={{fontSize:13,opacity:0.75}}>{fmtHM(todayMinutes)} / {fmtHM(dayPlan.totalMinutes)} studied</span>
+          </div>
+          <ProgressBar value={todayPct} color="var(--marigold)" height={11}/>
+        </div>
+
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:14,marginBottom:22}}>
+          <StatCard icon="🔥" label="High priority today" value={highPriority.length} tone="var(--coral)" onClick={()=>setPage("planner")} idx={0}/>
+          <StatCard icon="↻" label="Revisions due" value={dueRevisions.length} tone="var(--marigold-deep)" onClick={()=>setPage("revision")} idx={1}/>
+          <StatCard icon="▲" label="Overall syllabus" value={overall+"%"} tone="var(--teal)" onClick={()=>setPage("progress")} idx={2}/>
+          <StatCard icon="◷" label="Study today" value={fmtHM(todayMinutes)} tone="var(--navy)" onClick={()=>setPage("timer")} idx={3}/>
+        </div>
+
+        {/* Exam Focus Mode */}
+        <div className="card anim-in" style={{padding:20,marginBottom:22,borderColor: examFocus.enabled?"var(--coral)":"var(--line)"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:examFocus.enabled?12:0,flexWrap:"wrap",gap:10}}>
+            <div>
+              <div style={{fontSize:14.5,fontWeight:700}}>🎯 Exam Focus Mode</div>
+              <p className="faint" style={{fontSize:12.5,margin:"3px 0 0"}}>Have an exam coming up for one subject? Focus your plan on it.</p>
+            </div>
+            {examFocus.enabled ? (
+              <button className="btn btn-sm" style={{background:"var(--coral-soft)",color:"var(--coral)"}} onClick={()=>{setExamFocus({enabled:false}); showToast("Exam Focus turned off");}}>Turn off</button>
+            ) : (
+              <span className="faint" style={{fontSize:12}}>Currently off — plan is balanced across all subjects</span>
+            )}
+          </div>
+
+          {examFocus.enabled ? (
+            <div style={{display:"flex",gap:16,flexWrap:"wrap",alignItems:"center"}}>
+              <span className="pill" style={{background:"var(--coral-soft)",color:"var(--coral)"}}>● Focusing on {subjects.find(s=>s.id===examFocus.subjectId)?.name}</span>
+              {examFocus.examDate && <span className="faint" style={{fontSize:12.5}}>Exam in {daysToFocusExam} day{daysToFocusExam===1?"":"s"} ({examFocus.examDate})</span>}
+              <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12.5}}>
+                <input type="checkbox" checked={examFocus.focusOnly} onChange={e=>setExamFocus({focusOnly:e.target.checked})}/>
+                Focus only on this subject (100% of auto-filled time)
+              </label>
+            </div>
+          ) : (
+            <div className="sw-fform" style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"center",marginTop:12}}>
+              <select value={focusForm.subjectId} onChange={e=>setFocusForm(f=>({...f,subjectId:e.target.value}))}
+                style={{padding:"9px 12px",border:"1px solid var(--line)",borderRadius:10,fontSize:13}}>
+                {subjects.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+              <input type="date" value={focusForm.examDate} onChange={e=>setFocusForm(f=>({...f,examDate:e.target.value}))}
+                style={{padding:"9px 12px",border:"1px solid var(--line)",borderRadius:10,fontSize:13}}/>
+              <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12.5}}>
+                <input type="checkbox" checked={focusForm.focusOnly} onChange={e=>setFocusForm(f=>({...f,focusOnly:e.target.checked}))}/>
+                Focus only on this subject
+              </label>
+              <button className="btn btn-sm btn-dark" onClick={()=>{
+                setExamFocus({enabled:true, subjectId:focusForm.subjectId, examDate:focusForm.examDate, focusOnly:focusForm.focusOnly});
+                showToast("Exam Focus Mode activated for "+(subjects.find(s=>s.id===focusForm.subjectId)?.name||""));
+              }}>Activate Exam Focus</button>
+            </div>
+          )}
+        </div>
+
+        <div className="sw-two" style={{display:"grid",gridTemplateColumns:"1.5fr 1fr",gap:22}}>
+          <div className="card anim-in" style={{padding:22}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6,flexWrap:"wrap",gap:8}}>
+              <h3 style={{margin:0,fontSize:17}}>Today's Study Plan</h3>
+              <button className="btn btn-ghost btn-sm" onClick={()=>setPage("planner")}>Full planner →</button>
+            </div>
+            <div style={{display:"flex",gap:14,flexWrap:"wrap",fontSize:12.5,marginBottom:14}} className="faint">
+              <span>Used: <strong style={{color:"var(--ink)"}}>{fmtHM(dayPlan.usedByManual+dayPlan.usedByAuto)}</strong></span>
+              <span>Your picks: <strong style={{color:"var(--ink)"}}>{fmtHM(dayPlan.usedByManual)}</strong></span>
+              <span>Auto-filled: <strong style={{color:"var(--ink)"}}>{fmtHM(dayPlan.usedByAuto)}</strong></span>
+              <span>Remaining: <strong style={{color: dayPlan.remainingMinutes>0 ? "var(--coral)":"var(--ink)"}}>{fmtHM(Math.max(0,dayPlan.remainingMinutes))}</strong></span>
+            </div>
+
+            <button className="btn btn-sm" style={{marginBottom:14,background: dayPlan.autoOn?"var(--panel)":"var(--marigold)", color:dayPlan.autoOn?"var(--ink)":"var(--navy)", border:"1px solid var(--line)"}} onClick={()=>{toggleAutoFill(); showToast(dayPlan.autoOn? "Automatic suggestions cleared":"Filling remaining time automatically");}}>
+              {dayPlan.autoOn ? "🔄 Refresh automatic suggestions" : "✨ Fill Remaining Time Automatically"}
+            </button>
+
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {allPlanItems.length===0 && (
+                <p className="faint" style={{fontSize:13}}>No topics planned yet. Browse Subjects and tap “Add to Today's Plan”, or turn on automatic suggestions above.</p>
+              )}
+              {allPlanItems.map((p,i)=>{
+                const dm = diffMeta(p.topic.difficulty);
+                return (
+                  <div key={p.topic.id} className="anim-in" style={{border:"1px solid var(--line)",borderRadius:14,padding:"14px 16px",animationDelay:(i*40)+"ms"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"flex-start"}}>
+                      <div>
+                        <div style={{fontSize:11,fontWeight:700,color:p.subject.color,marginBottom:3}}>{i+1}. {p.subject.name}</div>
+                        <div style={{fontSize:14.5,fontWeight:700}}>{dm.emoji} {p.topic.name}</div>
+                        <div className="faint" style={{fontSize:12,marginTop:2}}>{p.topic.chapter}</div>
+                      </div>
+                      <div style={{textAlign:"right",whiteSpace:"nowrap"}}>
+                        <div style={{fontWeight:700,fontSize:14}}>⏱ {p.minutes} min</div>
+                        <PriorityDot score={p.score}/>
+                      </div>
+                    </div>
+                    <p style={{fontSize:12.5,color:"var(--ink-soft)",margin:"8px 0 0",fontStyle:"italic"}}>{p.reason}</p>
+                    <div style={{display:"flex",gap:8,marginTop:10}}>
+                      <button className="btn btn-sm btn-dark" onClick={()=>{setActiveTopicId(p.topic.id); setPage("timer");}}>Start studying →</button>
+                      <button className="btn btn-sm btn-ghost" onClick={()=> p.source==="manual" ? removeManualItem(p.topic.id) : dismissAutoItem(p.topic.id)}>Remove</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div style={{display:"flex",flexDirection:"column",gap:18}}>
+            <div className="card anim-in" style={{padding:20}}>
+              <h3 style={{margin:"0 0 12px",fontSize:15.5}}>Subject Progress</h3>
+              {subjects.map(s=>(
+                <div key={s.id} style={{marginBottom:12}}>
+                  <div style={{display:"flex",justifyContent:"space-between",fontSize:12.5,marginBottom:4}}>
+                    <span style={{fontWeight:700}}>{s.short}</span><span className="faint">{subjectCompletion(s)}%</span>
+                  </div>
+                  <ProgressBar value={subjectCompletion(s)} color={s.color}/>
+                </div>
+              ))}
+            </div>
+            <div className="card anim-in" style={{padding:20}}>
+              <h3 style={{margin:"0 0 10px",fontSize:15.5}}>Recent Sessions</h3>
+              {sessions.length===0 && <p className="faint" style={{fontSize:12.5}}>No study sessions yet — start a timer to see them here.</p>}
+              {sessions.slice(0,4).map(s=>{
+                const subj = subjects.find(x=>x.id===s.subjectId);
+                return (
+                  <div key={s.id} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderTop:"1px solid var(--line)",fontSize:12.5}}>
+                    <span>{subj?.short}</span><span className="faint">{s.minutes} min</span>
+                  </div>
+                );
+              })}
+              <button className="btn btn-ghost btn-sm" style={{marginTop:10,width:"100%",justifyContent:"center"}} onClick={()=>setPage("progress")}>View history →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({icon,label,value,tone,onClick,idx}){
+  return (
+    <button onClick={onClick} className="card anim-in" style={{padding:"16px 16px",textAlign:"left",border:"1px solid var(--line)",animationDelay:(idx*60)+"ms"}}>
+      <div style={{fontSize:18,marginBottom:8}}>{icon}</div>
+      <div style={{fontSize:22,fontWeight:700,fontFamily:"Fraunces",color:tone}}>{value}</div>
+      <div className="faint" style={{fontSize:12,marginTop:2}}>{label}</div>
+    </button>
+  );
+}
+
+/* =========================================================================
+   8. SMART PLANNER  (comparison + today's combined plan)
+   ========================================================================= */
+function Planner(){
+  const app = useApp();
+  const {subjects,daysToExam,intervals,examFocus,setPage,setActiveTopicId,removeManualItem,dismissAutoItem,addManualTopic} = app;
+  const dayPlan = useDayPlan();
+  const allPlanItems = [...dayPlan.manualItems, ...dayPlan.autoItems].sort((a,b)=>(b.score??60)-(a.score??60));
+
+  const table = subjects.map(s=>{
+    const flat = s.chapters.flatMap(c=>c.topics);
+    const avgDiff = flat.length ? flat.reduce((a,t)=>a+t.difficulty,0)/flat.length : 2;
+    const weakness = 5-s.confidence;
+    const best = bestTopicForSubject(s, daysToExam, intervals, examFocus);
+    return {
+      subject:s, completion:subjectCompletion(s),
+      difficultyLabel: avgDiff>=2.4?"High":avgDiff>=1.7?"Medium":"Low",
+      weaknessLabel: weakness>=3?"High":weakness>=2?"Medium":"Low",
+      score: best?best.score:0, best,
+    };
+  }).sort((a,b)=>b.score-a.score);
+
+  return (
+    <div>
+      <PageHeader eyebrow="Smart Planner" title="What should I study next?" subtitle="Priority combines topic difficulty, exam importance, your self-rated weakness, pending syllabus, revision due-ness, time since you last studied a topic — and Exam Focus Mode if it's on."/>
+      <div className="container" style={{maxWidth:1100,paddingBottom:60}}>
+        {examFocus.enabled && (
+          <div className="card anim-in focus-glow" style={{padding:"12px 18px",marginBottom:20,borderColor:"var(--coral)",display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+            <span className="pill" style={{background:"var(--coral-soft)",color:"var(--coral)"}}>🎯 Exam Focus active</span>
+            <span className="faint" style={{fontSize:12.5}}>{subjects.find(s=>s.id===examFocus.subjectId)?.name} is being prioritised{examFocus.focusOnly?" exclusively":""}.</span>
+          </div>
+        )}
+
+        <div className="card anim-in" style={{padding:0,overflow:"hidden",marginBottom:26}}>
+          <table className="sw-table sw-lbl" style={{width:"100%",borderCollapse:"collapse",fontSize:13.5}}>
+            <thead>
+              <tr style={{background:"var(--paper)"}}>
+                {["Subject","Syllabus","Difficulty","Weakness","Priority"].map((h,i)=>(
+                  <th key={h} style={{textAlign:i===0?"left":"right",padding:"12px 18px",fontSize:11.5,color:"var(--ink-soft)",fontWeight:700,textTransform:"uppercase",letterSpacing:".03em"}}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {table.map(row=>(
+                <tr key={row.subject.id} style={{borderTop:"1px solid var(--line)"}}>
+                  <td className="sw-full" style={{padding:"13px 18px",fontWeight:700,color:row.subject.color}}>{row.subject.name}</td>
+                  <td data-label="Syllabus" style={{padding:"13px 18px",textAlign:"right"}}>{row.completion}%</td>
+                  <td data-label="Difficulty" style={{padding:"13px 18px",textAlign:"right"}}>{row.difficultyLabel}</td>
+                  <td data-label="Weakness" style={{padding:"13px 18px",textAlign:"right"}}>{row.weaknessLabel}</td>
+                  <td data-label="Priority" style={{padding:"13px 18px",textAlign:"right"}}><PriorityDot score={row.score}/></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {table[0]?.best && (
+          <div className="card anim-in" style={{padding:22,marginBottom:26,borderLeft:"4px solid var(--marigold)"}}>
+            <div style={{fontSize:12,fontWeight:700,color:"var(--marigold-deep)",marginBottom:4}}>RECOMMENDED NEXT</div>
+            <div style={{fontSize:20,fontWeight:700,fontFamily:"Fraunces"}}>{table[0].subject.name} → {table[0].best.topic.name}</div>
+            <p className="muted" style={{margin:"8px 0 14px"}}>{table[0].best.reason}</p>
+            <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+              <button className="btn btn-dark" onClick={()=>{setActiveTopicId(table[0].best.topic.id); setPage("timer");}}>Start this topic →</button>
+              <button className="btn btn-ghost" onClick={()=>addManualTopic(table[0].best.topic, table[0].best.recommendedMinutes)}>+ Add to today's plan</button>
+            </div>
+          </div>
+        )}
+
+        <h3 style={{fontSize:16}}>Today's Combined Plan · {fmtHM(dayPlan.totalMinutes)} available</h3>
+        <p className="faint" style={{fontSize:12.5,marginTop:-6,marginBottom:14}}>Your manual picks always stay — auto-filled topics only fill what's left.</p>
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {allPlanItems.length===0 && <p className="faint">Nothing planned yet — add topics from Subjects, or turn on auto-fill from the Dashboard.</p>}
+          {allPlanItems.map((p,i)=>{
+            const dm=diffMeta(p.topic.difficulty);
+            return(
+              <div key={p.topic.id} className="card anim-in" style={{padding:"14px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:14,flexWrap:"wrap",animationDelay:(i*35)+"ms"}}>
+                <div style={{display:"flex",gap:12,alignItems:"center"}}>
+                  <div style={{width:30,height:30,borderRadius:9,background:p.subject.color+"20",color:p.subject.color,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:13}}>{i+1}</div>
+                  <div>
+                    <div style={{fontWeight:700,fontSize:14}}>{dm.emoji} {p.topic.name} {p.source==="manual" && <span className="pill" style={{background:"var(--teal-soft)",color:"var(--teal)",marginLeft:6}}>your pick</span>}</div>
+                    <div className="faint" style={{fontSize:12}}>{p.subject.name} · {p.topic.chapter}</div>
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+                  <span style={{fontSize:13,fontWeight:700}}>⏱ {p.minutes}m</span>
+                  <PriorityDot score={p.score}/>
+                  <button className="btn btn-sm btn-ghost" onClick={()=>{setActiveTopicId(p.topic.id); setPage("timer");}}>Study →</button>
+                  <button className="btn btn-sm btn-ghost" onClick={()=> p.source==="manual" ? removeManualItem(p.topic.id) : dismissAutoItem(p.topic.id)}>✕</button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================================
+   9. SUBJECTS + SUBJECT DETAIL
+   ========================================================================= */
+function Subjects(){
+  const {subjects,setPage,setActiveTopicId} = useApp();
+  const [openId,setOpenId] = useState(subjects[0]?.id);
+  const subj = subjects.find(s=>s.id===openId) || subjects[0];
+
+  return (
+    <div>
+      <PageHeader eyebrow="Subjects" title="Your five subjects" subtitle={`Structured to the official CBSE Class XII curriculum, ${CBSE_SESSION} session. Browse and tap “Add to Today's Plan” on any topic — the smart planner will never remove it.`}/>
+      <div className="container" style={{maxWidth:1100,paddingBottom:60}}>
+        <div style={{display:"flex",gap:10,marginBottom:24,flexWrap:"wrap"}}>
+          {subjects.map(s=>(
+            <button key={s.id} onClick={()=>setOpenId(s.id)} className="btn btn-sm" style={{
+              background: openId===s.id?s.color:"var(--panel)", color:openId===s.id?"#fff":"var(--ink)",
+              border:"1px solid "+(openId===s.id?s.color:"var(--line)")
+            }}>{s.name} · {subjectCompletion(s)}%</button>
+          ))}
+        </div>
+        {subj && <SubjectDetail subject={subj} onStudy={(t)=>{setActiveTopicId(t.id); setPage("timer");}}/>}
+      </div>
+    </div>
+  );
+}
+
+function SubjectDetail({subject,onStudy}){
+  const {updateTopic,addManualTopic,dailyManual,todayKey,daysToExam,intervals,examFocus} = useApp();
+  const [filter,setFilter] = useState("all");
+  const [justCompleted,setJustCompleted] = useState(null);
+  const addedIds = new Set((dailyManual[todayKey]||[]).map(m=>m.topicId));
+
+  const byBook = useMemo(()=>{
+    const map={};
+    subject.chapters.forEach(c=>{ (map[c.book]=map[c.book]||[]).push(c); });
+    return map;
+  },[subject]);
+
+  const filterTopic = t=>{
+    if(filter==="hard-incomplete") return t.difficulty===3 && !t.completed;
+    if(filter==="incomplete") return !t.completed;
+    if(filter==="completed") return t.completed;
+    return true;
+  };
+
+  const onCheck = (t, checked)=>{
+    updateTopic(t.id,{completed:checked, lastStudied: checked ? new Date().toISOString() : t.lastStudied});
+    if(checked){ setJustCompleted(t.id); setTimeout(()=>setJustCompleted(id=>id===t.id?null:id), 900); }
+  };
+
+  return (
+    <div>
+      <div className="card anim-in" style={{padding:20,marginBottom:20,display:"flex",gap:24,alignItems:"center",flexWrap:"wrap"}}>
+        <div style={{flex:1,minWidth:200}}>
+          <div style={{fontSize:12,fontWeight:700,color:subject.color}}>{subjectCompletion(subject)}% syllabus complete</div>
+          <ProgressBar value={subjectCompletion(subject)} color={subject.color} height={10}/>
+        </div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          {[["all","All"],["incomplete","Incomplete"],["hard-incomplete","Hard + Incomplete"],["completed","Completed"]].map(([k,l])=>(
+            <button key={k} onClick={()=>setFilter(k)} className="btn btn-sm" style={{
+              background:filter===k?"var(--navy)":"var(--panel)", color:filter===k?"#fff":"var(--ink)", border:"1px solid var(--line)"
+            }}>{l}</button>
+          ))}
+        </div>
+      </div>
+
+      {Object.entries(byBook).map(([bookName,chs])=>(
+        <div key={bookName} style={{marginBottom:22}}>
+          <h3 style={{fontSize:15.5,color:"var(--ink-soft)",marginBottom:10}}>{bookName}</h3>
+          {chs.map(ch=>{
+            const topics = ch.topics.filter(filterTopic);
+            if(!topics.length) return null;
+            return (
+              <div key={ch.name} className="card anim-in" style={{padding:"14px 18px",marginBottom:10}}>
+                <div style={{fontWeight:700,fontSize:14,marginBottom:8}}>{ch.name}</div>
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  {topics.map(t=>{
+                    const dm=diffMeta(t.difficulty);
+                    const already = addedIds.has(t.id);
+                    return (
+                      <div key={t.id} className={"sw-trow "+(justCompleted===t.id?"row-flash":"")} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 4px",borderTop:"1px solid var(--line)",borderRadius:8}}>
+                        <span className={justCompleted===t.id?"pop":""} style={{display:"inline-flex"}}>
+                          <input type="checkbox" checked={t.completed} onChange={e=>onCheck(t,e.target.checked)} className="sw-check" style={{width:16,height:16}}/>
+                        </span>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:13.5,fontWeight:600,textDecoration:t.completed?"line-through":"none",color:t.completed?"var(--gray)":"var(--ink)"}}>{t.name}</div>
+                          <div className="faint" style={{fontSize:11.5}}>{dm.emoji} {dm.label} · importance {impMeta(t.importance)} · ~{t.estimatedMinutes}m</div>
+                        </div>
+                        <button className="btn btn-sm btn-ghost" onClick={()=>onStudy(t)}>Study</button>
+                        <button
+                          disabled={already}
+                          className="btn btn-sm"
+                          style={{background: already?"var(--teal-soft)":"var(--marigold)", color: already?"var(--teal)":"var(--navy)"}}
+                          onClick={()=>{ const {recommendedMinutes}=calculatePriority(t,subject,daysToExam,intervals,examFocus); addManualTopic(t, recommendedMinutes); }}
+                        >{already?"✓ Added":"+ Add to Plan"}</button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* =========================================================================
+   10. TIMER  (stopwatch + pomodoro)
+   ========================================================================= */
+function Timer(){
+  const {subjects,activeTopicId,setActiveTopicId,logSession} = useApp();
+  const flat = allTopics(subjects);
+  const activeTopic = flat.find(t=>t.id===activeTopicId) || flat[0];
+
+  const [mode,setMode] = useState("stopwatch");
+  const [pomoLen,setPomoLen] = useState(25);
+  const [running,setRunning] = useState(false);
+  const [seconds,setSeconds] = useState(0);
+  const [phase,setPhase] = useState("study");
+  const intervalRef = useRef(null);
+
+  useEffect(()=>{
+    if(running){
+      intervalRef.current = setInterval(()=>{
+        setSeconds(s=>{
+          if(mode==="pomodoro"){
+            const limit = (phase==="study"?pomoLen: (pomoLen===25?5:10))*60;
+            if(s+1>=limit){ setPhase(p=> p==="study"?"break":"study"); return 0; }
+          }
+          return s+1;
+        });
+      },1000);
+    }
+    return ()=>clearInterval(intervalRef.current);
+  },[running,mode,phase,pomoLen]);
+
+  const stop = ()=>{
+    setRunning(false);
+    const mins = Math.round(seconds/60);
+    if(mins>0 && activeTopic){ logSession(activeTopic, activeTopic.subjectId, mins); }
+    setSeconds(0);
+  };
+
+  const limit = mode==="pomodoro" ? (phase==="study"?pomoLen:(pomoLen===25?5:10))*60 : null;
+
+  if(!activeTopic) return <div style={{padding:36}}>No topics available.</div>;
+
+  return (
+    <div>
+      <PageHeader eyebrow="Study Timer" title="Focus session" subtitle="Pick a topic, choose a mode, and press start. Stopping the timer automatically saves the session to your history."/>
+      <div className="container" style={{maxWidth:760,paddingBottom:60}}>
+        <div className="card anim-in" style={{padding:16,marginBottom:22}}>
+          <label style={{fontSize:12,fontWeight:700,color:"var(--ink-soft)"}}>Studying</label>
+          <select value={activeTopic.id} onChange={e=>setActiveTopicId(e.target.value)}
+            style={{display:"block",width:"100%",padding:"11px 12px",border:"1px solid var(--line)",borderRadius:10,marginTop:6,fontSize:14}}>
+            {flat.map(t=><option key={t.id} value={t.id}>{t.subjectName} — {t.name}</option>)}
+          </select>
+        </div>
+
+        <div style={{display:"flex",gap:8,marginBottom:22,flexWrap:"wrap"}}>
+          <button className="btn btn-sm" onClick={()=>{setMode("stopwatch"); setRunning(false); setSeconds(0);}} style={{background:mode==="stopwatch"?"var(--navy)":"var(--panel)",color:mode==="stopwatch"?"#fff":"var(--ink)",border:"1px solid var(--line)"}}>Stopwatch</button>
+          <button className="btn btn-sm" onClick={()=>{setMode("pomodoro"); setRunning(false); setSeconds(0); setPhase("study");}} style={{background:mode==="pomodoro"?"var(--navy)":"var(--panel)",color:mode==="pomodoro"?"#fff":"var(--ink)",border:"1px solid var(--line)"}}>Pomodoro</button>
+          {mode==="pomodoro" && (
+            <>
+              <button className="btn btn-sm btn-ghost" onClick={()=>setPomoLen(25)} style={{opacity:pomoLen===25?1:0.5}}>25/5</button>
+              <button className="btn btn-sm btn-ghost" onClick={()=>setPomoLen(50)} style={{opacity:pomoLen===50?1:0.5}}>50/10</button>
+            </>
+          )}
+        </div>
+
+        <div className={"card anim-in "+(running?"timer-live":"")} style={{padding:"46px 20px",textAlign:"center"}}>
+          {mode==="pomodoro" && <div className="pill" style={{background: phase==="study"?"var(--teal-soft)":"var(--marigold)"+"22", color: phase==="study"?"var(--teal)":"var(--marigold-deep)",marginBottom:16}}>{phase==="study"?"● Study phase":"● Break phase"}</div>}
+          <div className="sw-clock" style={{fontFamily:"Fraunces",fontSize:64,fontWeight:600,letterSpacing:"1px"}}>{fmtClock(seconds)}</div>
+          {limit && <div className="faint" style={{marginTop:6,fontSize:13}}>of {fmtClock(limit)}</div>}
+          <div style={{marginTop:28,display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
+            {!running ? (
+              <button className="btn btn-primary" onClick={()=>setRunning(true)}>▶ Start</button>
+            ) : (
+              <button className="btn btn-dark" onClick={()=>setRunning(false)}>⏸ Pause</button>
+            )}
+            <button className="btn btn-ghost" onClick={stop}>⏹ Stop & Save</button>
+            <button className="btn btn-ghost" onClick={()=>{setRunning(false); setSeconds(0);}}>↻ Reset</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================================
+   11. PROGRESS  (history + totals)
+   ========================================================================= */
+function ProgressPage(){
+  const {subjects,sessions} = useApp();
+  const overall = subjects.length ? Math.round(subjects.reduce((a,s)=>a+subjectCompletion(s),0)/subjects.length) : 0;
+
+  const since = d=> new Date(Date.now()-d*86400000);
+  const sum = (from)=> sessions.filter(s=>new Date(s.date)>=from).reduce((a,s)=>a+s.minutes,0);
+  const totalToday = sum(new Date(new Date().toDateString()));
+  const totalWeek = sum(since(7));
+  const totalMonth = sum(since(30));
+
+  return (
+    <div>
+      <PageHeader eyebrow="Progress" title="Your syllabus & study time" subtitle={`Overall syllabus completion: ${overall}%`}/>
+      <div className="container" style={{maxWidth:1000,paddingBottom:60}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:14,marginBottom:26}}>
+          <StatCard icon="☀" label="Today" value={fmtHM(totalToday)} tone="var(--marigold-deep)" idx={0}/>
+          <StatCard icon="▤" label="This week" value={fmtHM(totalWeek)} tone="var(--teal)" idx={1}/>
+          <StatCard icon="▦" label="This month" value={fmtHM(totalMonth)} tone="var(--navy)" idx={2}/>
+          <StatCard icon="▲" label="Overall syllabus" value={overall+"%"} tone="var(--coral)" idx={3}/>
+        </div>
+
+        <div className="card anim-in" style={{padding:22,marginBottom:26}}>
+          <h3 style={{marginTop:0,fontSize:16}}>Subject-wise completion</h3>
+          {subjects.map(s=>(
+            <div key={s.id} style={{marginBottom:14}}>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:13,marginBottom:5}}>
+                <span style={{fontWeight:700}}>{s.name}</span><span className="faint">{subjectCompletion(s)}%</span>
+              </div>
+              <ProgressBar value={subjectCompletion(s)} color={s.color} height={10}/>
+            </div>
+          ))}
+        </div>
+
+        <div className="card anim-in" style={{padding:0,overflow:"hidden"}}>
+          <div style={{padding:"16px 20px",fontWeight:700,fontSize:15,borderBottom:"1px solid var(--line)"}}>Study History</div>
+          {sessions.length===0 ? (
+            <p className="faint" style={{padding:"18px 20px",fontSize:13}}>No sessions logged yet — this list fills up as you use the Timer.</p>
+          ) : (
+            <table className="sw-table" style={{width:"100%",borderCollapse:"collapse",fontSize:13.5}}>
+              <thead><tr style={{background:"var(--paper)"}}>
+                {["Date","Subject","Topic","Time"].map((h,i)=>(
+                  <th key={h} style={{textAlign:i===3?"right":"left",padding:"10px 18px",fontSize:11.5,color:"var(--ink-soft)",fontWeight:700}}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {sessions.slice(0,20).map(s=>{
+                  const subj = subjects.find(x=>x.id===s.subjectId);
+                  return (
+                    <tr key={s.id} style={{borderTop:"1px solid var(--line)"}}>
+                      <td style={{padding:"10px 18px"}}>{new Date(s.date).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})}</td>
+                      <td style={{padding:"10px 18px",color:subj?.color,fontWeight:700}}>{subj?.short}</td>
+                      <td style={{padding:"10px 18px"}} className="faint sw-full sw-o9">{s.topicName}</td>
+                      <td className="sw-end" style={{padding:"10px 18px",textAlign:"right",fontWeight:700}}>{s.minutes} min</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================================
+   12. REVISION
+   ========================================================================= */
+function Revision(){
+  const {subjects,intervals,updateTopic,daysToExam} = useApp();
+  const flat = allTopics(subjects).filter(t=>t.completed);
+  const due = flat.filter(t=>isRevisionDue(t,intervals));
+  const upcoming = flat.filter(t=>!isRevisionDue(t,intervals) && t.revisionStage<3);
+  const stageLabel=["Needs 1st revision","Needs 2nd revision","Needs final revision","Fully revised"];
+
+  const markRevised = (t)=>{ updateTopic(t.id, { revisionStage: Math.min(3,t.revisionStage+1), lastRevised: new Date().toISOString() }); };
+
+  return (
+    <div>
+      <PageHeader eyebrow="Revision" title="Spaced-repetition revision" subtitle={`Intervals: 1st revision after ${intervals[0]} days · 2nd after ${intervals[1]} days · final revision from ${intervals[2]} days, and always prioritised as exams get closer.`}/>
+      <div className="container" style={{maxWidth:900,paddingBottom:60}}>
+        <h3 style={{fontSize:16}}>Due now · {due.length}</h3>
+        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:30}}>
+          {due.length===0 && <p className="faint">Nothing due for revision today — nice work.</p>}
+          {due.map((t,i)=>(
+            <div key={t.id} className="card anim-in" style={{padding:"14px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:14,flexWrap:"wrap",borderLeft:"4px solid var(--coral)",animationDelay:(i*40)+"ms"}}>
+              <div>
+                <div style={{fontSize:11,fontWeight:700,color:t.subjectColor}}>{t.subjectName}</div>
+                <div style={{fontWeight:700,fontSize:14}}>{t.name}</div>
+                <div className="faint" style={{fontSize:12}}>{stageLabel[t.revisionStage]} · last touched {daysSince(t.lastRevised||t.lastStudied)}d ago</div>
+              </div>
+              <button className="btn btn-sm btn-dark" onClick={()=>markRevised(t)}>Mark revised ✓</button>
+            </div>
+          ))}
+        </div>
+
+        <h3 style={{fontSize:16}}>Upcoming</h3>
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {upcoming.length===0 && <p className="faint">Nothing upcoming yet.</p>}
+          {upcoming.slice(0,12).map(t=>(
+            <div key={t.id} className="card anim-in" style={{padding:"12px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:14,flexWrap:"wrap"}}>
+              <div>
+                <div style={{fontSize:11,fontWeight:700,color:t.subjectColor}}>{t.subjectName}</div>
+                <div style={{fontWeight:600,fontSize:13.5}}>{t.name}</div>
+              </div>
+              <span className="faint" style={{fontSize:12}}>{stageLabel[t.revisionStage]}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================================
+   13. NOTES
+   ========================================================================= */
+function Notes(){
+  const {subjects,updateTopic} = useApp();
+  const [subjId,setSubjId] = useState(subjects[0]?.id);
+  const subj = subjects.find(s=>s.id===subjId) || subjects[0];
+  const topics = subj ? subj.chapters.flatMap(c=>c.topics) : [];
+
+  const onPhoto = (topicId, file)=>{
+    if(!file) return;
+    photoToDataURL(file).then(url=> updateTopic(topicId, {photo:url})).catch(()=>{});
+  };
+
+  if(!subj) return null;
+
+  return (
+    <div>
+      <PageHeader eyebrow="Notes" title="Photos & important notes" subtitle="Attach a photo of handwritten notes, diagrams or textbook pages to any topic, plus a quick reminder line."/>
+      <div className="container" style={{maxWidth:1000,paddingBottom:60}}>
+        <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}>
+          {subjects.map(s=>(
+            <button key={s.id} onClick={()=>setSubjId(s.id)} className="btn btn-sm" style={{background:subjId===s.id?s.color:"var(--panel)",color:subjId===s.id?"#fff":"var(--ink)",border:"1px solid var(--line)"}}>{s.short}</button>
+          ))}
+        </div>
+        <div className="sw-notes-grid" style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(230px,1fr))",gap:14}}>
+          {topics.map((t,i)=>(
+            <div key={t.id} className="card anim-in" style={{padding:14,animationDelay:(i*20)+"ms"}}>
+              <div style={{fontSize:13,fontWeight:700,marginBottom:6}}>{t.name}</div>
+              {t.photo ? (
+                <img src={t.photo} alt="note" style={{width:"100%",height:110,objectFit:"cover",borderRadius:8,marginBottom:8}}/>
+              ) : (
+                <div style={{width:"100%",height:110,borderRadius:8,background:"var(--paper)",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--gray)",fontSize:12,marginBottom:8}}>No photo yet</div>
+              )}
+              <label className="btn btn-sm btn-ghost" style={{width:"100%",justifyContent:"center",marginBottom:8}}>
+                📷 {t.photo?"Replace photo":"Add photo"}
+                <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>onPhoto(t.id, e.target.files[0])}/>
+              </label>
+              <textarea placeholder="Remember this for exam…" value={t.note} onChange={e=>updateTopic(t.id,{note:e.target.value})}
+                style={{width:"100%",minHeight:52,padding:8,border:"1px solid var(--line)",borderRadius:8,fontSize:12.5,resize:"vertical"}}/>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================================
+   13b. INSTALL AS APP (Android Chrome)
+   ========================================================================= */
+function useInstall(){
+  const [evt,setEvt] = useState(()=>window.__swInstallEvent||null);
+  const [installed,setInstalled] = useState(()=> window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone===true);
+  useEffect(()=>{
+    const ready = ()=>setEvt(window.__swInstallEvent);
+    const done = ()=>{ setEvt(null); setInstalled(true); };
+    window.addEventListener("sw-install-ready",ready);
+    window.addEventListener("sw-installed",done);
+    return ()=>{ window.removeEventListener("sw-install-ready",ready); window.removeEventListener("sw-installed",done); };
+  },[]);
+  const install = useCallback(async ()=>{
+    const e = window.__swInstallEvent; if(!e) return;
+    e.prompt();
+    try{ await e.userChoice; }catch(_){}
+    window.__swInstallEvent = null; setEvt(null);
+  },[]);
+  return {canInstall:!!evt, installed, install};
+}
+
+// Small dismissible banner shown once Chrome says the app is installable.
+function InstallBanner(){
+  const {canInstall,install} = useInstall();
+  const [hidden,setHidden] = useState(()=>{ try{ return sessionStorage.getItem("sw_install_hide")==="1"; }catch(e){ return false; } });
+  if(!canInstall || hidden) return null;
+  const dismiss = ()=>{ setHidden(true); try{ sessionStorage.setItem("sw_install_hide","1"); }catch(e){} };
+  return (
+    <div className="toast-in" style={{position:"fixed",left:12,right:12,bottom:12,zIndex:70,maxWidth:460,margin:"0 auto",background:"var(--navy)",color:"#fff",borderRadius:16,padding:"12px 14px",display:"flex",alignItems:"center",gap:12,boxShadow:"0 14px 30px -10px rgba(0,0,0,.45)"}}>
+      <img src="icons/icon-192.png" alt="" width="40" height="40" style={{borderRadius:10,flex:"0 0 auto"}}/>
+      <div style={{flex:1,fontSize:13,lineHeight:1.35}}><b>Install StudyWise</b><br/><span style={{opacity:.75}}>Open it like a normal app, even offline.</span></div>
+      <button className="btn btn-primary btn-sm" onClick={install}>Install</button>
+      <button aria-label="Dismiss" onClick={dismiss} style={{background:"none",border:"none",color:"#fff",opacity:.6,fontSize:20,padding:"0 4px"}}>×</button>
+    </div>
+  );
+}
+
+function InstallCard(){
+  const {canInstall,installed,install} = useInstall();
+  return (
+    <div className="card anim-in" style={{padding:22,marginBottom:18}}>
+      <h3 style={{marginTop:0,fontSize:15}}>Install as app</h3>
+      {installed ? (
+        <p className="faint" style={{fontSize:12.5,lineHeight:1.6,margin:0}}>✓ StudyWise is installed on this device.</p>
+      ) : canInstall ? (
+        <>
+          <p className="faint" style={{fontSize:12.5,lineHeight:1.6,marginBottom:14}}>Add StudyWise to your home screen so it opens full-screen like a normal app and works offline.</p>
+          <button className="btn btn-dark" style={{minHeight:48,justifyContent:"center",width:"100%"}} onClick={install}>📲 Install StudyWise</button>
+        </>
+      ) : (
+        <p className="faint" style={{fontSize:12.5,lineHeight:1.6,margin:0}}>
+          In Chrome, tap the <b>⋮</b> menu, then <b>Install app</b> (or <b>Add to Home screen</b>). If you don't see it, open this page in Chrome itself rather than inside another app's browser.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* =========================================================================
+   14. SETTINGS
+   ========================================================================= */
+function Settings(){
+  const {displayName,setDisplayName,dailyMinutesDefault,setDailyMinutesDefault,examDate,setExamDate,resetCurrentProfile,switchProfile,showToast,exportBackup,importBackupFile,profileCount} = useApp();
+  const [local,setLocal] = useState({name:displayName, dailyMinutes:dailyMinutesDefault, examDate});
+  const importRef = useRef(null);
+  const readLastExport = ()=>{ try{ const v=localStorage.getItem(LAST_EXPORT_KEY); return v?new Date(v):null; }catch(e){ return null; } };
+  const [lastExport,setLastExport] = useState(readLastExport);
+  // keep the form in step with the store (after a backup import or profile switch)
+  useEffect(()=>{ setLocal({name:displayName, dailyMinutes:dailyMinutesDefault, examDate}); },[displayName,dailyMinutesDefault,examDate]);
+  const [newName,setNewName] = useState("");
+
+  return (
+    <div>
+      <PageHeader eyebrow="Settings" title="Preferences" subtitle="Fine-tune your plan. Changing these updates every recommendation immediately."/>
+      <div className="container" style={{maxWidth:640,paddingBottom:60}}>
+        <div className="card anim-in" style={{padding:22,marginBottom:18}}>
+          <label style={{fontSize:12,fontWeight:700}}>Name</label>
+          <input value={local.name} onChange={e=>setLocal(l=>({...l,name:e.target.value}))} style={{display:"block",width:"100%",padding:"10px 12px",border:"1px solid var(--line)",borderRadius:10,marginTop:5,marginBottom:16}}/>
+          <label style={{fontSize:12,fontWeight:700}}>Usual daily study time (minutes)</label>
+          <input type="number" value={local.dailyMinutes} onChange={e=>setLocal(l=>({...l,dailyMinutes:Number(e.target.value)||0}))} style={{display:"block",width:"100%",padding:"10px 12px",border:"1px solid var(--line)",borderRadius:10,marginTop:5,marginBottom:16}}/>
+          <p className="faint" style={{fontSize:11.5,marginTop:-10,marginBottom:16}}>This is just your default — change today's actual available time any time from the Dashboard.</p>
+          <label style={{fontSize:12,fontWeight:700}}>Board exam date</label>
+          <input type="date" value={local.examDate} onChange={e=>setLocal(l=>({...l,examDate:e.target.value}))} style={{display:"block",width:"100%",padding:"10px 12px",border:"1px solid var(--line)",borderRadius:10,marginTop:5}}/>
+          <button className="btn btn-primary" style={{marginTop:18}} onClick={()=>{ setDisplayName(local.name); setDailyMinutesDefault(local.dailyMinutes); setExamDate(local.examDate); showToast("Settings saved"); }}>Save changes</button>
+        </div>
+
+        <div className="card anim-in" style={{padding:22,marginBottom:18}}>
+          <h3 style={{marginTop:0,fontSize:15}}>Difficulty & time source</h3>
+          <p className="faint" style={{fontSize:12.5,lineHeight:1.6}}>
+            Difficulty and study-time estimates shown across StudyWise are <strong>Planner Estimated</strong> values —
+            CBSE does not officially publish a per-topic difficulty rating. Recommended durations are
+            <strong> AI/Planner Recommended Study Time</strong>, not an official CBSE figure. Syllabus content
+            is structured to the official CBSE Class XII Arts curriculum, {CBSE_SESSION} session.
+          </p>
+        </div>
+
+        <div className="card anim-in" style={{padding:22,marginBottom:18}}>
+          <h3 style={{marginTop:0,fontSize:15}}>Switch profile</h3>
+          <p className="faint" style={{fontSize:12.5,marginBottom:10}}>Each name has its own completely separate progress, sessions and settings — nothing carries over. A new name always starts at 0%.</p>
+          <div style={{display:"flex",gap:8}}>
+            <input value={newName} onChange={e=>setNewName(e.target.value)} placeholder="Enter a name" style={{flex:1,padding:"9px 12px",border:"1px solid var(--line)",borderRadius:10}}/>
+            <button className="btn btn-sm btn-dark" disabled={!newName.trim()} onClick={()=>{switchProfile(newName); setNewName("");}}>Switch</button>
+          </div>
+        </div>
+
+        <InstallCard/>
+
+        <div className="card anim-in" style={{padding:22,marginBottom:18}}>
+          <h3 style={{marginTop:0,fontSize:15}}>Data &amp; Backup</h3>
+          <p className="faint" style={{fontSize:12.5,lineHeight:1.6,marginBottom:14}}>
+            Save your study progress to a file so you can restore it on another phone or browser.
+            The backup includes all {profileCount} profile{profileCount===1?"":"s"} on this device.
+            Your progress is also saved automatically on this device as you go. If you clear this app's data or change phones, it's gone, so export a backup now and then.
+          </p>
+          <p style={{fontSize:12.5,fontWeight:700,marginTop:0,marginBottom:14,color:lastExport?"var(--teal)":"var(--coral)"}}>
+            {lastExport ? "Last backup: "+lastExport.toLocaleString([], {day:"numeric",month:"short",year:"numeric",hour:"numeric",minute:"2-digit"}) : "No backup exported yet."}
+          </p>
+          <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
+            <button className="btn btn-dark" style={{flex:"1 1 200px",justifyContent:"center",minHeight:48,padding:"12px 16px",whiteSpace:"nowrap"}} onClick={()=>{ exportBackup(); setTimeout(()=>setLastExport(readLastExport()),50); }}>⬇ Export Backup</button>
+            <button className="btn btn-ghost" style={{flex:"1 1 200px",justifyContent:"center",minHeight:48,padding:"12px 16px",whiteSpace:"nowrap"}} onClick={()=>importRef.current && importRef.current.click()}>⬆ Import Backup</button>
+            <input ref={importRef} type="file" style={{display:"none"}}
+              onChange={e=>{ const f=e.target.files && e.target.files[0]; e.target.value=""; if(f) importBackupFile(f); }}/>
+          </div>
+        </div>
+
+        <div className="card anim-in" style={{padding:22,borderColor:"var(--coral)"}}>
+          <h3 style={{marginTop:0,fontSize:15}}>Reset progress</h3>
+          <p className="faint" style={{fontSize:12.5}}>Clears completion, revision stages, study sessions and today's plan for this profile — back to exactly 0%.</p>
+          <button className="btn btn-sm" style={{background:"var(--coral-soft)",color:"var(--coral)"}} onClick={()=>{ if(confirm("Reset all progress for this profile back to 0%?")){ resetCurrentProfile(); showToast("Progress reset to 0%"); } }}>Reset all progress</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================================
+   15. ROOT
+   ========================================================================= */
+// Toast for the landing/setup screens (the main app shell renders its own).
+function LandingToast(){
+  const {toast} = useApp();
+  if(!toast) return null;
+  return <div className="toast-in sw-toast" style={{position:"fixed",bottom:26,right:26,maxWidth:"calc(100vw - 52px)",zIndex:60,background:"var(--navy)",color:"#fff",padding:"13px 20px",borderRadius:12,fontSize:13.5,fontWeight:600,boxShadow:"0 14px 30px -10px rgba(0,0,0,.4)"}}>{toast.msg}</div>;
+}
+
+function AppInner(){
+  const {page,setPage,currentKey} = useApp();
+
+  useEffect(()=>{
+    if(!currentKey && page!=="landing" && page!=="setup") setPage("landing");
+  },[currentKey,page]);
+
+  if(page==="landing") return <><Landing/><LandingToast/></>;
+  if(page==="setup") return <><Setup/><LandingToast/></>;
+  if(!currentKey) return null;
+
+  const pages = { dashboard:Dashboard, planner:Planner, subjects:Subjects, timer:Timer, progress:ProgressPage, revision:Revision, notes:Notes, settings:Settings };
+  const Page = pages[page] || Dashboard;
+  return <Shell><Page/></Shell>;
+}
+
+function App(){
+  return <AppProvider><AppInner/><InstallBanner/></AppProvider>;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
